@@ -26,6 +26,8 @@ uint32_t DeviceManager_Register( struct sockaddr_in* addr );
 
 int DeviceManager_ReportHeartbeat( uint32_t id );
 
+device_t* DeviceManager_GetDevice( uint32_t id );
+
 void DeviceManager_Shutdown( void );
 
 #endif
