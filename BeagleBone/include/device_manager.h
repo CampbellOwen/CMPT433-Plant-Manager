@@ -4,23 +4,27 @@
 #include <stdint.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <uuid.h>
+#include <pthread.h>
 
 enum connection_status {
 	ALIVE,
-	DEAD
+	TIMEOUT
 };
 
 typedef struct {
-	uuid_t id;
+	uint32_t id;
+	uint64_t last_seen;
 	struct sockaddr_in* address;
-	enum connection_status curr_status;
+	enum connection_status state;
+	pthread_t watch_thread;
 
 } device_t;
 
 void DeviceManager_Init( void );
 
 uint32_t DeviceManager_Register( struct sockaddr_in* addr );
+
+int DeviceManager_ReportHeartbeat( uint32_t id );
 
 void DeviceManager_Shutdown( void );
 

@@ -26,7 +26,7 @@ device_array_t* DeviceArray_Init( int initialSize )
 
 void DeviceArray_Destroy( device_array_t* arr )
 {
-	pthread_mutex_destroy( arr->arr_lock );
+	pthread_mutex_destroy( &arr->arr_lock );
 
 	for( int i = 0; i < arr->len; i++ ) {
 		free( arr->data[i] );
@@ -45,6 +45,7 @@ void resize_amount( device_array_t* arr, int amount )
 	if( errno != ENOMEM ) {
 		arr->total_size = new_size;
 	}
+	printf( "Resizing device array to %d\n", new_size );
 }
 
 void resize_arr( device_array_t* arr )
@@ -88,7 +89,8 @@ int DeviceArray_PutI( device_array_t* arr, device_t* p, int index )
 		}
 
 		else {
-			int new_size = (int)ceil( pow( 2, log2( index+1 ) ) );
+			double log2 = log( index + 1 ) / log( 2 );
+			int new_size = (int) pow( 2, ceil( log2 ) );
 			
 			resize_amount( arr, new_size - arr->total_size );
 			
@@ -113,8 +115,47 @@ device_t* DeviceArray_Get( device_array_t* arr, int index )
 	{
 		if( index >= 0 && index < arr->len ) {
 			ret = arr->data[ index ];
+		}
 	}
 	pthread_mutex_unlock( &arr->arr_lock );
 
 	return ret;
+}
+
+device_t* DeviceArray_GetId( device_array_t* arr, uint32_t id )
+{
+	device_t* ret = NULL;
+	pthread_mutex_lock( &arr->arr_lock );
+	{
+		for( int i = 0; i < arr->len; i++ ) {
+			if( arr->data[ i ]->id == id ) {
+				ret = arr->data[ i ];
+				break;
+			}
+		}
+	}
+	pthread_mutex_unlock( &arr->arr_lock );
+
+	return ret;
+}
+
+device_t* DeviceArray_GetAlive( device_array_t* arr, int* len_out )
+{
+	device_t* alive_devices = NULL;
+	*len_out = 0;
+	pthread_mutex_lock( &arr->arr_lock );
+	{
+		alive_devices = malloc( sizeof( device_t* ) * arr->len );
+		if( alive_devices != NULL ) {
+			for( int i = 0; i < arr->len; i++ ) {
+				if( arr->data[ i ]->state == ALIVE ) {
+					alive_devices[ *len_out ] = *arr->data[ i ];
+					( *len_out )++;
+				}
+			}
+		}
+	}
+	pthread_mutex_unlock( &arr->arr_lock );
+
+	return alive_devices;
 }

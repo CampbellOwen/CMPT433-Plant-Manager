@@ -1,7 +1,7 @@
 DESKTOP_CC = gcc
 BB_CC = arm-linux-gnueabihf-gcc
 
-CC = $(BB_CC)
+CC = $(DESKTOP_CC)
 CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -D _POSIX_C_SOURCE=199309L
 INCLUDE = $(wildcard include/*.c) 
 PROD_MAIN = main.c
@@ -13,7 +13,7 @@ OUTDIR = bin
 TARGET_DIR = $(HOME)/cmpt433/public/myApps
 TARGET_NAME=$(OUTNAME)
 
-all: test prod
+all: prod
 runtest: 
 	$(DESKTOP_CC) $(CFLAGS) $(INCLUDE) $(SRC) $(TEST) -o $(OUTDIR)/$(TESTNAME)
 	$(OUTDIR)/$(TESTNAME)

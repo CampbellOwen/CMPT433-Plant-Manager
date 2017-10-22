@@ -3,7 +3,10 @@
 
 int main( void )
 {
-	printf(" Hello World!\n" );
+
+	DeviceManager_Init();
+
+	DeviceManager_Shutdown();
 
 	return 0;
 }
