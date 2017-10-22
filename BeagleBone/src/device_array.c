@@ -19,12 +19,15 @@ device_array_t* DeviceArray_Init( int initialSize )
 		free( newArr );
 		return NULL;
 	}
+	pthread_mutex_init( &newArr->arr_lock, NULL );
 
 	return newArr;
 }
 
 void DeviceArray_Destroy( device_array_t* arr )
 {
+	pthread_mutex_destroy( arr->arr_lock );
+
 	for( int i = 0; i < arr->len; i++ ) {
 		free( arr->data[i] );
 	}
@@ -51,52 +54,67 @@ void resize_arr( device_array_t* arr )
 
 int DeviceArray_Put( device_array_t* arr, device_t* p )
 {
-	if( arr->len >= arr->total_size ) {
-		resize_arr( arr );
-		
-		// resize didn't work?
-		if( arr->len >= arr->total_size ) {
-			return -1;
-		}
-	}
+	int index = -1;
 
-	int index = arr->len;
-	arr->data[ index ] = p;
-	arr->len++;
+	pthread_mutex_lock( &arr->arr_lock );
+	{
+		if( arr->len >= arr->total_size ) {
+			resize_arr( arr );
+			
+			// resize didn't work?
+			if( arr->len >= arr->total_size ) {
+				return -1;
+			}
+		}
+
+		index = arr->len;
+		arr->data[ index ] = p;
+		arr->len++;
+	}
+	pthread_mutex_unlock( &arr->arr_lock );
 
 	return index;
 }
 
 int DeviceArray_PutI( device_array_t* arr, device_t* p, int index )
 {
-	if( index < 0 ) {
-		return -1;
-	}
-	if( index < arr->total_size ) {
-		arr->data[ index ] = p;
+	pthread_mutex_lock( &arr->arr_lock );
+	{
+		if( index < 0 ) {
+			index = -1;
+		}
+		else if( index < arr->total_size ) {
+			arr->data[ index ] = p;
+		}
 
-		return index;
+		else {
+			int new_size = (int)ceil( pow( 2, log2( index+1 ) ) );
+			
+			resize_amount( arr, new_size - arr->total_size );
+			
+			// resize didn't work?
+			if( index >= arr->total_size ) {
+				index = -1;
+			}
+			else {
+				arr->data[ index ] = p;
+			}
+		}
 	}
-
-	int new_size = (int)ceil( pow( 2, log2( index+1 ) ) );
-	
-	resize_amount( arr, new_size - arr->total_size );
-	
-	// resize didn't work?
-	if( index >= arr->total_size ) {
-		return -1;
-	}
-
-	arr->data[ index ] = p;
+	pthread_mutex_unlock( &arr->arr_lock );
 
 	return index;
 }
 
 device_t* DeviceArray_Get( device_array_t* arr, int index )
 {
-	if( index < 0 || index >= arr->len ) {
-		return NULL;
+	device_t* ret = NULL;
+	pthread_mutex_lock( &arr->arr_lock );
+	{
+		if( index >= 0 && index < arr->len ) {
+			ret = arr->data[ index ];
 	}
+	pthread_mutex_unlock( &arr->arr_lock );
 
-	return arr->data[ index ];
+	return ret;
 }

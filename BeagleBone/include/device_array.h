@@ -3,11 +3,13 @@
 
 #include <include/device_manager.h>
 #include <stdint.h>
+#include <pthread.h>
 
 typedef struct {
 	uint32_t len;
 	uint32_t total_size;
 	device_t** data;
+	pthread_mutex_t arr_lock;
 	
 } device_array_t;
 
