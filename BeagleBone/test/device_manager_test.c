@@ -3,6 +3,7 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
 
 void device_manager_test()
 {
@@ -22,6 +23,10 @@ void device_manager_test()
 
 	sleep_time.tv_sec = 15;
 	nanosleep( &sleep_time, NULL );
+
+	device_t* test_device = DeviceManager_GetDevice( id );
+	assert( test_device->state == TIMEOUT );
+
 	DeviceManager_ReportHeartbeat( id );
 	sleep_time.tv_sec = 1;
 	nanosleep( &sleep_time, NULL );
