@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <include/plant_manager.h>
+#include <include/device_manager.h>
 
 int main( void )
 {
