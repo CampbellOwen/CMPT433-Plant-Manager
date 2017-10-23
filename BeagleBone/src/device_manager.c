@@ -17,7 +17,7 @@ static void* watch_device( void* args )
 {
 	device_t* device = (device_t*)args;
 
-	printf( "Starting watchdog for device %d\n", device->id );
+	printf( "Starting watch for device %d\n", device->id );
 
 	while( should_watch && device->state != TIMEOUT ) {
 		nanosleep( &heart_beat_time, NULL );
@@ -34,7 +34,7 @@ static void* watch_device( void* args )
 		pthread_mutex_unlock( &lock );
 	}
 
-	printf( "Ending watchdog for device %d\n", device->id );
+	printf( "Ending watch for device %d\n", device->id );
 
 	return NULL;
 }
