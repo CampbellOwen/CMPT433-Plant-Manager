@@ -1,4 +1,5 @@
 #include <include/udp_server.h>
+#include <include/device_manager.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +18,17 @@
 
 #define UDP_SERVER_BUFFER_LENGTH 1024
 #define UDP_SERVER_MAX_PACKET 1500
+
+#define CATEGORY_CONFIG 'C'
+#define CATEGORY_STATUS 'S'
+#define CATEGORY_ACTION 'A'
+
+#define CONFIG_REGISTER 'r'
+
+#define STATUS_HEARTBEAT 'h'
+#define STATUS_STATUS 's'
+
+#define ACTION_ACTIVATE 'a'
 
 static int serverfd;
 static struct sockaddr_in serverAddr;
@@ -53,23 +65,88 @@ static void UDP_Server_SendMessage( struct sockaddr_in* clientAddr, unsigned int
     }
 }
 
+static void SendRegistration( struct sockaddr_in* clientAddr, uint32_t id )
+{
+	char buffer[ UDP_SERVER_MAX_PACKET ];
+	uint32_t n_id = htonl( id );
+	sprintf( buffer, "Cr" );
+	memcpy( buffer + 2, &n_id, sizeof( uint32_t ) );
+	buffer[ 2 + sizeof( uint32_t ) ] = '\0';
+
+	UDP_Server_SendMessage( clientAddr, strlen( buffer ), buffer );
+}
+
+static void HandleRegistration( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
+{
+	device_t* new_device = DeviceManager_Register( clientAddr );
+	SendRegistration( clientAddr, new_device->id );
+}
+
+static void HandleHeartbeat( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
+{
+	if( client_len < ( 2 + sizeof( uint32_t ) ) ) {
+		return;
+	}
+
+	uint32_t id = 
+				  buffer[2] << 24 |
+				  buffer[3] << 16 |
+				  buffer[4] << 8 |
+				  buffer[5];
+	uint32_t converted_id = ntohl( id );
+
+	printf( "Heartbeat for id: %u\n", converted_id );
+
+	DeviceManager_ReportHeartbeat( clientAddr, converted_id );
+
+	UDP_Server_SendMessage( clientAddr, client_len, buffer );
+}
+
+static void HandleStatus( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
+{
+	// TODO: No status to report yet
+}
+
+static void HandleActivate( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
+{
+	// TODO nothing to activate yet
+}
 
 static void UDP_Server_HandleMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
 {
-    int len = 0;
-    char* tokens[ UDP_SERVER_BUFFER_LENGTH ];
-    char delims[] = { '\t', '\n', ' ' }; 
-    for( char* token = strtok( buffer, delims ); token != NULL; token = strtok( NULL, " " ) ) {
-        if( token[ strlen( token ) - 1 ] == '\n' ) {
-            token[ strlen( token ) - 1] = '\0';
-        }
-        tokens[ len++ ] = token;     
-		(void)tokens;
-    }
+	if( client_len < 2 ) {
+		return;
+	}
 
-    if( len == 0 ) {
-        UDP_Server_SendMessage( clientAddr, client_len, "Invalid Command\n");                 
-    }  
+	switch( buffer[ 0 ] ) {
+		case CATEGORY_CONFIG:
+			switch( buffer[ 1 ] ) {
+				case CONFIG_REGISTER:
+					HandleRegistration( clientAddr, client_len, buffer );
+					break;
+			}
+			break;
+		case CATEGORY_STATUS:
+			switch( buffer[ 1 ] ) {
+				case STATUS_HEARTBEAT:
+					HandleHeartbeat( clientAddr, client_len, buffer );
+					break;
+				case STATUS_STATUS:
+					HandleStatus( clientAddr, client_len, buffer );
+			}
+
+			break;
+		case CATEGORY_ACTION:
+			switch( buffer[ 1 ] ) {
+				case ACTION_ACTIVATE:
+					HandleActivate( clientAddr, client_len, buffer );
+					break;
+			}	
+			break;
+
+		default:
+			return;
+	}
 }
 
 static void* UDP_Server_Thread( void* args )
@@ -113,7 +190,7 @@ int UDP_Server_Init( int port )
         ( struct sockaddr* )&serverAddr, 
         sizeof( serverAddr ) );
     if( res < 0 ) {
-        fprintf( stderr, "Erro binding socket to port %d\n", port );
+        fprintf( stderr, "Error binding socket to port %d\n", port );
         return 0;
     }
     poll = 1;

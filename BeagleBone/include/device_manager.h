@@ -22,9 +22,11 @@ typedef struct {
 
 void DeviceManager_Init( void );
 
-uint32_t DeviceManager_Register( struct sockaddr_in* addr );
+device_t* DeviceManager_Register( struct sockaddr_in* addr );
 
-int DeviceManager_ReportHeartbeat( uint32_t id );
+device_t* DeviceManager_Reregister( struct sockaddr_in* addr, uint32_t id );
+
+int DeviceManager_ReportHeartbeat( struct sockaddr_in* addr, uint32_t id );
 
 device_t* DeviceManager_GetDevice( uint32_t id );
 

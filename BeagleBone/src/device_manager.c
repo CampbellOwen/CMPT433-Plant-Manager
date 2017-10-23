@@ -49,27 +49,40 @@ void DeviceManager_Init( void )
 	heart_beat_time.tv_nsec = 0;
 }
 
-uint32_t DeviceManager_Register( struct sockaddr_in* addr )
+device_t* DeviceManager_Register( struct sockaddr_in* addr )
 {
 	uint32_t id = rand();
 
-	pthread_mutex_lock( &lock );
-	{
-		device_t* new_device = malloc( sizeof( device_t ) );
-		new_device->id = id;
-		new_device->last_seen = (uint64_t)time( NULL );
-		new_device->address = addr;
-		new_device->state = ALIVE;
-		
-		printf( "Registering new device: id %d, port %d\n", id, ntohs( addr->sin_port ) );
+	device_t* new_device = malloc( sizeof( device_t ) );
+	new_device->id = id;
+	new_device->last_seen = (uint64_t)time( NULL );
+	new_device->address = addr;
+	new_device->state = ALIVE;
+	
+	printf( "Registering new device: id %d, port %d\n", id, ntohs( addr->sin_port ) );
 
-		pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
+	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
 
-		DeviceArray_Put( device_arr, new_device );
-	}
-	pthread_mutex_unlock( &lock );
+	DeviceArray_Put( device_arr, new_device );
 
-	return id;
+	return new_device;
+}
+
+device_t* DeviceManager_Reregister( struct sockaddr_in* addr, uint32_t id )
+{
+	device_t* new_device = malloc( sizeof( device_t ) );
+	new_device->id = id;
+	new_device->last_seen = (uint64_t)time( NULL );
+	new_device->address = addr;
+	new_device->state = ALIVE;
+	
+	printf( "Reregistering old device: id %d, port %d\n", id, ntohs( addr->sin_port ) );
+
+	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
+
+	DeviceArray_Put( device_arr, new_device );
+
+	return new_device;
 }
 
 device_t* DeviceManager_GetDevice( uint32_t id )
@@ -77,14 +90,13 @@ device_t* DeviceManager_GetDevice( uint32_t id )
 	return DeviceArray_GetId( device_arr, id );
 }
 
-int DeviceManager_ReportHeartbeat( uint32_t id )
+int DeviceManager_ReportHeartbeat( struct sockaddr_in* clientAddr, uint32_t id )
 {
 	pthread_mutex_lock( &lock );
 	{
 		device_t* device = DeviceArray_GetId( device_arr, id );
 		if( device == NULL ) {
-			pthread_mutex_unlock( &lock );
-			return 0;
+			device = DeviceManager_Reregister( clientAddr, id );
 		}
 
 		printf( "Heartbeat from %d", id );
