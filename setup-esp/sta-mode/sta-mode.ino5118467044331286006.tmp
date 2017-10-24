@@ -1,0 +1,119 @@
+#include <ESP8266WiFi.h>
+
+char ssid[50];
+char password[50];
+
+WiFiServer server(80);
+
+void connectWiFi() {
+  Serial.printf("Connecting to %s ", ssid);
+  WiFi.begin(ssid, password);
+  
+  if (WiFi.status() == WL_NO_SSID_AVAIL)
+  {
+    Serial.printf("There is no network with the SSID %D", ssid);
+  }
+  else {
+    while (WiFi.status() != WL_CONNECT_FAILED) && (WiFi.status() != WL_CONNECTED)) {
+      delay(500);
+      Serial.print(".");
+    }
+  
+    if (WiFi.status() == WL_CONNECT_FAILED)
+    {
+      Serial.printf("Failed to connect to network.\n");
+    }
+    else
+    {
+      Serial.println(" connected");
+      server.begin();
+      Serial.printf("Web server started, open %s in a web browser\n", WiFi.localIP().toString().c_str());
+    }
+  }
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  Serial.println();
+}
+
+
+// prepare a web page to be send to a client (web browser)
+String prepareHtmlPage()
+{
+  String htmlPage =
+     String("HTTP/1.1 200 OK\r\n") +
+            "Content-Type: text/html\r\n" +
+            "Connection: close\r\n" +  // the connection will be closed after completion of the response
+            "Refresh: 5\r\n" +  // refresh the page automatically every 5 sec
+            "\r\n" +
+            "<!DOCTYPE HTML>" +
+            "<html>" +
+            "Analog input:  " + String(analogRead(A0)) +
+            "</html>" +
+            "\r\n";
+  return htmlPage;
+}
+
+void updateSSID(String newSSID)
+{
+  newSSID.toCharArray(ssid, 50);
+  Serial.printf("Updated SSID to %s\n", ssid);
+  connectWiFi();
+}
+
+void updatePassword(String newPassword)
+{
+  newPassword.toCharArray(password, 50);
+  Serial.printf("Updated password to %s\n", password);
+  connectWiFi();
+}
+
+void readInSerial()
+{
+  if (Serial.available() > 0)
+  {
+    String readString = Serial.readStringUntil('\n');
+    if (readString.startsWith("ssid:"))
+    {
+      updateSSID(readString.substring(5));
+    }
+    if (readString.startsWith("password:"))
+    {
+      updatePassword(readString.substring(9));
+    }
+  }
+}
+
+void loop()
+{
+  readInSerial();
+  
+  WiFiClient client = server.available();
+  // wait for a client (web browser) to connect
+  if (client)
+  {
+    Serial.println("\n[Client connected]");
+    while (client.connected())
+    {
+      // read line by line what the client (web browser) is requesting
+      if (client.available())
+      {
+        String line = client.readStringUntil('\r');
+        Serial.print(line);
+        // wait for end of client's request, that is marked with an empty line
+        if (line.length() == 1 && line[0] == '\n')
+        {
+          client.println(prepareHtmlPage());
+          break;
+        }
+      }
+    }
+    delay(1); // give the web browser time to receive the data
+
+    // close the connection:
+    client.stop();
+    Serial.println("[Client disonnected]");
+  }
+}
