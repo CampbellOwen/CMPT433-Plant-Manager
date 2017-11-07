@@ -1,3 +1,6 @@
+// CMPT 433: Project
+// Sources: https://github.com/esp8266/Arduino/blob/master/doc/esp8266wifi/server-examples.rst
+
 #include <ESP8266WiFi.h>
 
 bool ssidSet = false;
@@ -10,21 +13,24 @@ WiFiServer server(80);
 void connectWiFi() {
   if ((ssidSet) && (passwordSet)) {
     Serial.printf("Connecting to %s ", ssid.c_str());
+    unsigned long startTime = millis();
+    unsigned long endTime = millis();
     WiFi.begin(ssid.c_str(), password.c_str());
-    
-    while ((WiFi.status() != WL_CONNECT_FAILED) && (WiFi.status() != WL_CONNECTED) && (WiFi.status() != WL_NO_SSID_AVAIL))
+
+    // Exit the loop if it has tried connecting for more than 15s
+    while (((endTime - startTime) <= 15000) && (WiFi.status() != WL_CONNECT_FAILED)
+      && (WiFi.status() != WL_CONNECTED) && (WiFi.status() != WL_NO_SSID_AVAIL))
     {
       delay(500);
       Serial.print(".");
-      Serial.printf("Status: %d\n", WiFi.status());
+      endTime = millis();
     }
-      
-    if (WiFi.status() == WL_NO_SSID_AVAIL)
+
+    if ((endTime - startTime) > 15000)
     {
-      Serial.printf("There is no network with the SSID %s", ssid.c_str());
+      Serial.printf("Sorry. The ESP8266 was not able to connect to %s within the timeframe.\n", ssid.c_str());
     }
-      
-    if (WiFi.status() == WL_CONNECT_FAILED)
+    else if (WiFi.status() == WL_CONNECT_FAILED)
     {
       Serial.printf("Failed to connect to network.\n");
     }
@@ -34,6 +40,10 @@ void connectWiFi() {
       server.begin();
       Serial.printf("Web server started, open %s in a web browser\n", WiFi.localIP().toString().c_str());
     }
+    else if (WiFi.status() == WL_NO_SSID_AVAIL)
+    {
+      Serial.printf("There is no network with the SSID %s", ssid.c_str());
+    }
   }
 }
 
@@ -42,24 +52,6 @@ void setup()
   Serial.begin(115200);
   Serial.println();
   connectWiFi();
-}
-
-
-// prepare a web page to be send to a client (web browser)
-String prepareHtmlPage()
-{
-  String htmlPage =
-     String("HTTP/1.1 200 OK\r\n") +
-            "Content-Type: text/html\r\n" +
-            "Connection: close\r\n" +  // the connection will be closed after completion of the response
-            "Refresh: 5\r\n" +  // refresh the page automatically every 5 sec
-            "\r\n" +
-            "<!DOCTYPE HTML>" +
-            "<html>" +
-            "Analog input:  " + String(analogRead(A0)) +
-            "</html>" +
-            "\r\n";
-  return htmlPage;
 }
 
 void updateSSID(String newSSID)
@@ -92,6 +84,23 @@ void readInSerial()
       updatePassword(readString.substring(9));
     }
   }
+}
+
+// prepare a web page to be send to a client (web browser)
+String prepareHtmlPage()
+{
+  String htmlPage =
+     String("HTTP/1.1 200 OK\r\n") +
+            "Content-Type: text/html\r\n" +
+            "Connection: close\r\n" +  // the connection will be closed after completion of the response
+            "Refresh: 5\r\n" +  // refresh the page automatically every 5 sec
+            "\r\n" +
+            "<!DOCTYPE HTML>" +
+            "<html>" +
+            "Analog input:  " + String(analogRead(A0)) +
+            "</html>" +
+            "\r\n";
+  return htmlPage;
 }
 
 void loop()
