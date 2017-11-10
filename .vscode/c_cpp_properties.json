@@ -3,12 +3,12 @@
         {
             "name": "Mac",
             "includePath": [
-                "/Users/dolapotoki/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/cores/esp8266"
+                "/Users/dolapotoki/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": false,
                 "path": [
-                    "/Users/dolapotoki/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0/cores/esp8266",
+                    "/Users/dolapotoki/Library/Arduino15/packages/esp8266/hardware/esp8266/2.3.0",
                     "${workspaceRoot}"
                 ]
             },

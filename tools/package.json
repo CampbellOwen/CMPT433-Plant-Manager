@@ -1,0 +1,19 @@
+{
+  "name": "esp8266-data-flasher",
+  "version": "0.0.1",
+  "description": "Flash files to the esp8266 using the cli",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Esp8266",
+    "Flasher"
+  ],
+  "author": "Dolapo Toki. dolapotoki@gmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "command-line-args": "^4.0.7",
+    "command-line-usage": "^4.0.1"
+  }
+}
