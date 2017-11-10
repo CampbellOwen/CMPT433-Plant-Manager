@@ -58,7 +58,6 @@ void PageServer::servePage()
   
   if (client){
     Serial.println("\n[Client connected]");
-    
     while (client.connected()){
       if (client.available()){
 

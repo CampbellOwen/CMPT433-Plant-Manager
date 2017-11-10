@@ -10,7 +10,7 @@ PageServer *server;
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println();
   network = new Networky(AP_SSID, AP_PASSWORD);
   server = new PageServer(8080, FILE_PATH);
@@ -20,6 +20,5 @@ void loop()
 {
   Serial.printf("Stations connected = %d\n", WiFi.softAPgetStationNum());
   server->servePage(); // This sends the page to every connected client
+  delay(200);
 }
-
-
