@@ -8,9 +8,13 @@ protected:
     const char *apSsid;
     const char *apPassword;
     const char *networkState;
+    void connectToSta();
 public:
     Networky(const char *apSsid, const char *apPassword); // Constructor to begin he node in access point mode
-    bool connectSta(const char *staSsid, const char *staPassword);
+    bool connectToSta(const char *staSsid, const char *staPassword);
+    bool establishApNetwork(const char *staSsid, const char *staPassword);
+    void setStaSsid(const char *ssid);
+    void setStaPassword(const char *password);
     void printConfigToSerial();
 };
 
