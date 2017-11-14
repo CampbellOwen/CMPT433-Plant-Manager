@@ -21,12 +21,13 @@
         {
             "name": "Linux",
             "includePath": [
-                "/home/dolapotoki/.arduino15/packages/esp8266/hardware/esp8266/2.3.0/cores/esp8266"
+                "/home/dolapotoki/.arduino15/packages/esp8266/hardware/esp8266/2.3.0"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": false,
                 "path": [
-                    "/home/dolapotoki/.arduino15/packages/esp8266/hardware/esp8266/2.3.0/cores/esp8266"
+                    "/home/dolapotoki/.arduino15/packages/esp8266/hardware/esp8266/2.3.0",
+                    "${workspaceRoot}"
                 ]
             },
             "intelliSenseMode": "clang-x64"
