@@ -1,3 +1,5 @@
-# Ignore the following folders
+# Ignore the following files and folders
 tmp/
 node_modules/
+*.swp
+BeagleBone/bin/*
