@@ -21,11 +21,11 @@
 <script>
   function submitPostRequest(){
     let xmlHttpRquest = new XMLHttpRequest();
-    xmlHttpRquest.open("POST", "http://192.168.4.1:8080/wifisettings", false);
+    xmlHttpRquest.open("POST", "http://192.168.4.1:8080/testpost", false);
     xmlHttpRquest.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xmlHttpRquest.send(JSON.stringify("{'user':'none'}"));
   }
-  // submitPostRequest();
-</script>
+  submitPostRequest();
+ </script>
 
 </html>

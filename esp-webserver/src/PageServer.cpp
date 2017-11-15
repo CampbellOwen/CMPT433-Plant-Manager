@@ -1,4 +1,5 @@
-#include <ESP8266WiFi.h>
+// #include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 #include <FS.h>
 #include "../include/PageServer.h"
 
@@ -28,7 +29,6 @@ String prepareHtmlPage(const char* file)
      String("HTTP/1.1 200 OK\r\n") +
             "Content-Type: text/html\r\n" +
             "Connection: close\r\n" +  // the connection will be closed after completion of the response
-            "Refresh: 5\r\n" +  // refresh the page automatically every 5 sec
             "\r\n" 
             +
             file
@@ -37,10 +37,16 @@ String prepareHtmlPage(const char* file)
   return htmlPage;
 }
 
+void PageServer::serveBaseRootPath(){
+ 
+}
+
 PageServer::PageServer(uint16_t port, const char *file_path)
 {
   char buffer[BUFFER_SIZE];
-  server = new WiFiServer(8080);
+  server = new ESP8266WebServer(8080);
+  server->on("/", HTTP_GET, std::bind(&PageServer::serveBaseRootPath, this));
+  
   boolean result = readHtmlFile(file_path, buffer);
   
   if(result){
@@ -54,28 +60,5 @@ PageServer::PageServer(uint16_t port, const char *file_path)
 
 void PageServer::servePage()
 {
-  client = server->available();
-  
-  if (client){
-    Serial.println("\n[Client connected]");
-    while (client.connected()){
-      if (client.available()){
-
-        // Read line by line what the client (web browser) is requesting
-        String line = client.readStringUntil('\r'); 
-        Serial.print(line);
-        
-        // Wait for end of client's request, that is marked with an empty line
-        if (line.length() == 1 && line[0] == '\n'){
-          client.println(HTML_DOC);
-          break;
-        }
-
-      }
-    }
-
-    delay(1); // Give the web browser time to receive the data
-    client.stop(); // Close the connection:
-    Serial.println("[Client disonnected]");
-  }
+  server->handleClient();
 }
