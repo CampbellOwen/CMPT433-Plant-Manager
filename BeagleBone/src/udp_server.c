@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <math.h>
+#include <sqlite3.h>
 
 #define UDP_SERVER_BUFFER_LENGTH 1024
 #define UDP_SERVER_MAX_PACKET 1500
@@ -26,14 +27,27 @@
 #define CONFIG_REGISTER 'r'
 
 #define STATUS_HEARTBEAT 'h'
-#define STATUS_STATUS 's'
+#define STATUS_MOISTURE 'm'
 
 #define ACTION_ACTIVATE 'a'
+
+#define DB_NAME "plants.db"
+#define INSERT_MOISTURE "INSERT INTO moisture (id, time, value) VALUES ( %u, %u, %lld );"
 
 static int serverfd;
 static struct sockaddr_in serverAddr;
 static pthread_t tid;
 static int poll = 0;
+static sqlite3* db;
+
+static uint32_t get_uint32_t( char* buffer, int index )
+{
+     uint32_t id =    buffer[index] << 24 |
+				  buffer[index+1] << 16 |
+				  buffer[index+2] << 8 |
+				  buffer[index+3];
+	return ntohl( id );
+}
 
 static void UDP_Server_SendMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* message ) {
     int message_len = strlen( message );
@@ -77,8 +91,7 @@ static void SendRegistration( struct sockaddr_in* clientAddr, uint32_t id )
 }
 
 static void HandleRegistration( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
-{
-	device_t* new_device = DeviceManager_Register( clientAddr );
+{ device_t* new_device = DeviceManager_Register( clientAddr );
 	SendRegistration( clientAddr, new_device->id );
 }
 
@@ -87,24 +100,43 @@ static void HandleHeartbeat( struct sockaddr_in* clientAddr, unsigned int client
 	if( client_len < ( 2 + sizeof( uint32_t ) ) ) {
 		return;
 	}
+     
+     uint32_t id = get_uint32_t( buffer, 2 );
 
-	uint32_t id = 
-				  buffer[2] << 24 |
-				  buffer[3] << 16 |
-				  buffer[4] << 8 |
-				  buffer[5];
-	uint32_t converted_id = ntohl( id );
+	printf( "Heartbeat for id: %u\n", id );
 
-	printf( "Heartbeat for id: %u\n", converted_id );
-
-	DeviceManager_ReportHeartbeat( clientAddr, converted_id );
+	DeviceManager_ReportHeartbeat( clientAddr, id );
 
 	UDP_Server_SendMessage( clientAddr, client_len, buffer );
 }
 
-static void HandleStatus( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
+static void HandleMoisture( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
 {
-	// TODO: No status to report yet
+    if( client_len < ( 2 + sizeof( uint32_t ) ) ) {
+        return;
+    }
+
+     uint32_t id = get_uint32_t( buffer, 2 );
+     uint32_t value = get_uint32_t( buffer, 2 + sizeof( uint32_t ) );
+     long long curr_time = ( long long )time( NULL );
+
+     printf( "Received moisture data from id: %u, value: %u\n", id, value );
+
+    char sql_statement[ UDP_SERVER_BUFFER_LENGTH ];
+
+    sprintf( sql_statement, INSERT_MOISTURE, id, value, curr_time );
+
+    char* err_msg = NULL;
+
+    int ret = sqlite3_exec( db, sql_statement, NULL, NULL, &err_msg );
+    if( ret != SQLITE_OK ) {
+          fprintf( stderr, "Error writing to SQL: %s\n", err_msg );
+          sqlite3_free( err_msg );
+    }
+    else {
+        printf( "Values succesfully stored in db\n" );
+    }
+
 }
 
 static void HandleActivate( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
@@ -131,8 +163,8 @@ static void UDP_Server_HandleMessage( struct sockaddr_in* clientAddr, unsigned i
 				case STATUS_HEARTBEAT:
 					HandleHeartbeat( clientAddr, client_len, buffer );
 					break;
-				case STATUS_STATUS:
-					HandleStatus( clientAddr, client_len, buffer );
+				case STATUS_MOISTURE:
+					HandleMoisture( clientAddr, client_len, buffer );
 			}
 
 			break;
@@ -174,6 +206,13 @@ static void* UDP_Server_Thread( void* args )
 
 int UDP_Server_Init( int port )
 {
+    int ret = sqlite3_open( DB_NAME, &db );
+
+    if( ret ) {
+      fprintf( stderr, "Can't open database: %s\n", sqlite3_errmsg( db ) );
+      return( 0 );
+    } 
+    
     serverfd = socket( AF_INET, SOCK_DGRAM, 0 );
     if( serverfd < 0 ) {
         fprintf( stderr, "Error creating socket\n" );
@@ -203,4 +242,5 @@ void UDP_Server_Wait( void )
 {
     pthread_join( tid, NULL );
     close( serverfd );
+    sqlite3_close( db );
 }

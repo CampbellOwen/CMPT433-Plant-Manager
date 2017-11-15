@@ -2,7 +2,7 @@ DESKTOP_CC = gcc
 BB_CC = arm-linux-gnueabihf-gcc
 
 CC = $(DESKTOP_CC)
-CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -D _POSIX_C_SOURCE=199309L
+CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -lsqlite3 -D _POSIX_C_SOURCE=199309L
 INCLUDE = $(wildcard include/*.c) 
 PROD_MAIN = main.c
 SRC = $(wildcard src/*.c)
@@ -27,3 +27,5 @@ clean:
 	rm $(OUTDIR)/$(OUTNAME) 
 	rm $(TARGET_DIR)/$(TARGET_NAME) 
 
+init_db:
+	cat sql/init.sql | sqlite3 $(OUTDIR)/plants.db
