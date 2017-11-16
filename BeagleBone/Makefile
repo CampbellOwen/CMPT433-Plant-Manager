@@ -1,8 +1,9 @@
 DESKTOP_CC = gcc
 BB_CC = arm-linux-gnueabihf-gcc
 
-CC = $(DESKTOP_CC)
-CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -lsqlite3 -D _POSIX_C_SOURCE=199309L
+CC = $(BB_CC)
+CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -D _POSIX_C_SOURCE=199309L
+LFLAGS = -Llib
 INCLUDE = $(wildcard include/*.c) 
 PROD_MAIN = main.c
 SRC = $(wildcard src/*.c)
@@ -12,14 +13,15 @@ OUTNAME = plantManager
 OUTDIR = bin
 TARGET_DIR = $(HOME)/cmpt433/public/myApps
 TARGET_NAME=$(OUTNAME)
+DB_NAME = plants.db
 
 all: prod
 runtest: 
-	$(DESKTOP_CC) $(CFLAGS) $(INCLUDE) $(SRC) $(TEST) -o $(OUTDIR)/$(TESTNAME)
+	$(DESKTOP_CC) $(LFLAGS) $(CFLAGS) $(INCLUDE) $(SRC) $(TEST) -o $(OUTDIR)/$(TESTNAME)
 	$(OUTDIR)/$(TESTNAME)
 
 prod:
-	$(CC) $(CFLAGS) $(INCLUDE) $(SRC) $(PROD_MAIN) -o $(OUTDIR)/$(OUTNAME)
+	$(CC) $(CFLAGS) $(LFLAGS) $(INCLUDE) $(SRC) $(PROD_MAIN) -o $(OUTDIR)/$(OUTNAME)
 	cp $(OUTDIR)/$(OUTNAME) $(TARGET_DIR)/$(TARGET_NAME)
 
 clean:
@@ -28,4 +30,6 @@ clean:
 	rm $(TARGET_DIR)/$(TARGET_NAME) 
 
 init_db:
-	cat sql/init.sql | sqlite3 $(OUTDIR)/plants.db
+	rm $(OUTDIR)/$(DB_NAME)
+	cat sql/init.sql | sqlite3 $(OUTDIR)/$(DB_NAME)
+	cp $(OUTDIR)/$(DB_NAME) $(TARGET_DIR)/$(DB_NAME)

@@ -90,6 +90,7 @@ int GPIO_WritePin( GPIO_Pin_t* pin, int value )
 
     fprintf( valueFile, "%d", value );
     fclose( valueFile );
+    printf(" Wrote value\n");
     return 1;
 }
 

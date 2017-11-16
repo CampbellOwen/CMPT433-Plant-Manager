@@ -24,7 +24,7 @@ static void* watch_device( void* args )
 		uint64_t curr_time = time( NULL );
 		pthread_mutex_lock( &lock );
 		{
-			printf( "Current time: %lu; device %d last seen: %lu\n", curr_time, device->id, device->last_seen );
+			printf( "Current time: %llu; device %d last seen: %llu\n", curr_time, device->id, device->last_seen );
 			if( ( curr_time - device->last_seen ) > ( heart_beat_time.tv_sec ) )
 			{
 				printf( "Device %d TIMEOUT\n", device->id );
