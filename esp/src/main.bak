@@ -1,0 +1,40 @@
+#include <ESP8266WiFi.h>          //ESP8266 Core WiFi Library (you most likely already have this in your sketch)
+
+#include <DNSServer.h>            //Local DNS Server used for redirecting all requests to the configuration portal
+#include <ESP8266WebServer.h>     //Local WebServer used to serve the configuration portal
+#include <WiFiManager.h> 
+#include <WiFiUdp.h>
+#include <Arduino.h>
+
+#define HOST_IP 192.168.7.2
+#define HOST_PORT 12345
+
+#define BUFFER_SIZE 512
+
+WiFiUDP udp;
+byte buffer[ BUFFER_SIZE ];
+
+void blink()
+{
+    digitalWrite( 2, HIGH );
+    delay( 1000 );
+    digitalWrite( 2, LOW );
+    delay( 1000 );
+}
+
+void setup()
+{
+    WiFiManager wifiManager;
+    wifiManager.autoConnect( "PLANT" );
+
+    udp.begin( HOST_PORT );
+
+    blink();
+}
+
+void loop()
+{
+    blink();
+    Serial.println( "HELLO YES" );
+    delay( 500 );
+}
