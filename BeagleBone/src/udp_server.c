@@ -45,15 +45,17 @@ static GPIO_Pin_t pump_pin;
 
 static uint32_t get_uint32_t( char* buffer, int index )
 {
-     uint32_t id =    buffer[index] << 24 |
-				  buffer[index+1] << 16 |
-				  buffer[index+2] << 8 |
-				  buffer[index+3];
+     uint32_t id = 0;
+     id =    buffer[index+3] << 24 |
+             buffer[index+2] << 16 |
+             buffer[index+1] << 8 |
+             buffer[index];
 	return ntohl( id );
 }
 
 static void UDP_Server_SendMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* message ) {
     int message_len = strlen( message );
+    printf( "Sending message of length: %d\n", message_len );
     if( strlen( message ) < UDP_SERVER_MAX_PACKET ) {
         sendto( 
             serverfd, 
@@ -82,20 +84,31 @@ static void UDP_Server_SendMessage( struct sockaddr_in* clientAddr, unsigned int
     }
 }
 
-static void SendRegistration( struct sockaddr_in* clientAddr, uint32_t id )
+static void SendRegistration( struct sockaddr_in* clientAddr, uint32_t id, unsigned int client_len )
 {
 	char buffer[ UDP_SERVER_MAX_PACKET ];
 	uint32_t n_id = htonl( id );
+    printf( "\tOriginal: %x\n", id );
+    printf( "\thtonl: %x\n", n_id );
 	sprintf( buffer, "Cr" );
-	memcpy( buffer + 2, &n_id, sizeof( uint32_t ) );
+	memcpy( &buffer[2] , &n_id, sizeof( uint32_t ) );
 	buffer[ 2 + sizeof( uint32_t ) ] = '\0';
+     printf( "Sending back info: \n" );
+     printf( "\t %c\n", buffer[ 0 ] );
+     printf( "\t %c\n", buffer[ 1 ] );
+     printf( "\t %x\n", buffer[ 2 ] );
+     printf( "\t %x\n", buffer[ 3 ] );
+     printf( "\t %x\n", buffer[ 4 ] );
+     printf( "\t %x\n", buffer[ 5 ] );
+     printf( "\t %x\n", buffer[ 6 ] );
 
-	UDP_Server_SendMessage( clientAddr, strlen( buffer ), buffer );
+	UDP_Server_SendMessage( clientAddr, client_len, buffer );
 }
 
 static void HandleRegistration( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
-{ device_t* new_device = DeviceManager_Register( clientAddr );
-	SendRegistration( clientAddr, new_device->id );
+{ 
+     device_t* new_device = DeviceManager_Register( clientAddr );
+	SendRegistration( clientAddr, new_device->id, client_len );
 }
 
 static void HandleHeartbeat( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
@@ -166,7 +179,7 @@ static void HandleActivate( struct sockaddr_in* clientAddr, unsigned int client_
 
 static void UDP_Server_HandleMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
 {
-    printf("Received Message\n");
+    printf("Received Message from ip: %u on port:%u \n", clientAddr->sin_addr.s_addr, ntohs( clientAddr->sin_port ) );
 	if( client_len < 2 ) {
 		return;
 	}
