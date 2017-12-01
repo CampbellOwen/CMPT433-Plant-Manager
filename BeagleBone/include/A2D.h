@@ -4,7 +4,7 @@
 typedef struct {
     int pin;
     int A2D_bits;
-    double v_ref; 
+    double v_ref;
 } A2D_t;
 
 //Activate A2D in the hardware

@@ -42,7 +42,7 @@ static void* watch_device( void* args )
 void DeviceManager_Init( void )
 {
 	should_watch = 1;
-	pthread_mutex_init( &lock, NULL );	
+	pthread_mutex_init( &lock, NULL );
 	device_arr = DeviceArray_Init( DEVICE_MANAGER_DEFAULT_SIZE );
 	srand( time( NULL ) );
 	heart_beat_time.tv_sec = 5;
@@ -58,7 +58,7 @@ device_t* DeviceManager_Register( struct sockaddr_in* addr )
 	new_device->last_seen = (uint64_t)time( NULL );
 	new_device->address = addr;
 	new_device->state = ALIVE;
-	
+
 	printf( "Registering new device: id %d, port %d\n", id, ntohs( addr->sin_port ) );
 
 	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
@@ -75,7 +75,7 @@ device_t* DeviceManager_Reregister( struct sockaddr_in* addr, uint32_t id )
 	new_device->last_seen = (uint64_t)time( NULL );
 	new_device->address = addr;
 	new_device->state = ALIVE;
-	
+
 	printf( "Reregistering old device: id %d, port %d\n", id, ntohs( addr->sin_port ) );
 
 	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
