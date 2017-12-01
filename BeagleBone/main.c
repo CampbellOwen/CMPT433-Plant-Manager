@@ -8,7 +8,6 @@ int main( void )
 
 	DeviceManager_Init();
 	UDP_Server_Init( 12345 );
-	Moisture_init();
 
 	UDP_Server_Wait();
 

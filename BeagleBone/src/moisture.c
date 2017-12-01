@@ -23,7 +23,6 @@ void Moisture_read() {
 static void* Moisture_collect() {
   if (should_run) {
     Moisture_read();
-    // I2C_setMoisture(currMoisture);
     nanosleep( &delay_time, ( struct timespec* ) NULL );
   }
 

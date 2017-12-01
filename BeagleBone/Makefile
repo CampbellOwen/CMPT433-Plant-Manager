@@ -2,9 +2,9 @@ DESKTOP_CC = gcc
 BB_CC = arm-linux-gnueabihf-gcc
 
 CC = $(BB_CC)
-CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -D _POSIX_C_SOURCE=199309L
+CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -D _POSIX_C_SOURCE=199309L -pthread
 LFLAGS = -Llib
-INCLUDE = $(wildcard include/*.c) 
+INCLUDE = $(wildcard include/*.c)
 PROD_MAIN = main.c
 SRC = $(wildcard src/*.c)
 TEST = $(wildcard test/*.c)
@@ -16,18 +16,18 @@ TARGET_NAME=$(OUTNAME)
 DB_NAME = plants.db
 
 all: prod
-runtest: 
-	$(DESKTOP_CC) $(LFLAGS) $(CFLAGS) $(INCLUDE) $(SRC) $(TEST) -o $(OUTDIR)/$(TESTNAME)
+runtest:
+	$(DESKTOP_CC) $(INCLUDE) $(SRC) $(TEST) -o $(OUTDIR)/$(TESTNAME) $(LFLAGS) $(CFLAGS) 
 	$(OUTDIR)/$(TESTNAME)
 
 prod:
-	$(CC) $(CFLAGS) $(LFLAGS) $(INCLUDE) $(SRC) $(PROD_MAIN) -o $(OUTDIR)/$(OUTNAME)
+	$(CC) $(INCLUDE) $(SRC) $(PROD_MAIN) -o $(OUTDIR)/$(OUTNAME) $(CFLAGS) $(LFLAGS)
 	cp $(OUTDIR)/$(OUTNAME) $(TARGET_DIR)/$(TARGET_NAME)
 
 clean:
 	rm $(OUTDIR)/$(TESTNAME)
-	rm $(OUTDIR)/$(OUTNAME) 
-	rm $(TARGET_DIR)/$(TARGET_NAME) 
+	rm $(OUTDIR)/$(OUTNAME)
+	rm $(TARGET_DIR)/$(TARGET_NAME)
 
 init_db:
 	rm $(OUTDIR)/$(DB_NAME)
