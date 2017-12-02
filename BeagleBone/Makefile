@@ -2,9 +2,10 @@ DESKTOP_CC = gcc
 BB_CC = arm-linux-gnueabihf-gcc
 
 CC = $(BB_CC)
-CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -ldl -D _POSIX_C_SOURCE=199309L
+CFLAGS = -I./ -Wall -Werror -std=c99 -g -ldl -lm -lpthread -D _POSIX_C_SOURCE=199309L -pthread
 LFLAGS = -Llib
-INCLUDE = $(wildcard include/*.c) 
+INCLUDE = $(wildcard include/*.c)
+PROD_MAIN = main.c
 SRC = $(wildcard src/*.c)
 OBJECTS=$(patsubst %.c, %.o, $(SRC))
 OUTDIR = bin
@@ -20,11 +21,11 @@ all: build $(EXEC)
 deploy: all init_db
 
 $(EXEC): $(OBJECTS)
-	$(CC) $(CFLAGS) $(LFLAGS) $(INCLUDE) $(OBJECTS) -o $@
+	$(CC) $(INCLUDE) $(OBJECTS) -o $@ $(CFLAGS) $(LFLAGS)
 	cp $(EXEC) $(TARGET_DIR)/$(TARGET_NAME)
 
 $(OBJECTS): src/%.o : src/%.c
-	$(CC) $(CFLAGS) $(LFLAGS) $(INCLUDE) -c $< -o $@
+	$(CC) $(INCLUDE) -c $< -o $@ $(CFLAGS) $(LFLAGS)
 
 build:
 	@mkdir -p $(OUTDIR)
@@ -32,7 +33,7 @@ build:
 clean:
 	rm -rf $(OUTDIR)
 	rm -f $(OBJECTS)
-	rm -f $(TARGET_DIR)/$(TARGET_NAME) 
+	rm -f $(TARGET_DIR)/$(TARGET_NAME)
 
 init_db:
 	rm -f $(OUTDIR)/$(DB_NAME)

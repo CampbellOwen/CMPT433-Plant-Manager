@@ -83,7 +83,7 @@ int DeviceManager_Init( void )
     } 
 
 	should_watch = 1;
-	pthread_mutex_init( &lock, NULL );	
+	pthread_mutex_init( &lock, NULL );
 	device_arr = DeviceArray_Init( DEVICE_MANAGER_DEFAULT_SIZE );
 	srand( time( NULL ) );
 
@@ -107,7 +107,7 @@ device_t* DeviceManager_Register( struct sockaddr_in* addr )
 	new_device->last_seen = (uint64_t)time( NULL );
 	new_device->address = addr;
 	new_device->state = ALIVE;
-	
+
 	printf( DEVICE_STATUS "Registering device to id %d\n", id );
 
 	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
@@ -124,7 +124,7 @@ device_t* DeviceManager_Reregister( struct sockaddr_in* addr, uint32_t id )
 	new_device->last_seen = (uint64_t)time( NULL );
 	new_device->address = addr;
 	new_device->state = ALIVE;
-	
+
 	printf( DEVICE_STATUS "Re-registering old device - id: %d\n", id );
 
 	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );

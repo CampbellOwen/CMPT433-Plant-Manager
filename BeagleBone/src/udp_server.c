@@ -53,9 +53,9 @@ static void UDP_Server_SendMessage( struct sockaddr_in* clientAddr, unsigned int
     int message_len = strlen( message );
     printf( NETWORK "Sending message of length: %d\n", message_len );
     if( strlen( message ) < UDP_SERVER_MAX_PACKET ) {
-        sendto( 
-            serverfd, 
-            message, 
+        sendto(
+            serverfd,
+            message,
             message_len,
             0,
             ( struct sockaddr* )clientAddr,
@@ -68,15 +68,15 @@ static void UDP_Server_SendMessage( struct sockaddr_in* clientAddr, unsigned int
             if( pos + len >= message_len ) {
                 len = message_len - pos;
             }
-            sendto( 
-                serverfd, 
-                message + pos, 
+            sendto(
+                serverfd,
+                message + pos,
                 len,
                 0,
                 ( struct sockaddr* )clientAddr,
                 client_len );
             pos += len;
-        }   
+        }
     }
 }
 
@@ -102,7 +102,7 @@ static void SendRegistration( struct sockaddr_in* clientAddr, uint32_t id, unsig
 }
 
 static void HandleRegistration( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
-{ 
+{
      device_t* new_device = DeviceManager_Register( clientAddr );
 	SendRegistration( clientAddr, new_device->id, client_len );
 }
@@ -112,7 +112,7 @@ static void HandleHeartbeat( struct sockaddr_in* clientAddr, unsigned int client
 	if( client_len < ( 2 + sizeof( uint32_t ) ) ) {
 		return;
 	}
-     
+
      uint32_t id = get_uint32_t( buffer, 2 );
 
 	printf( INFO "Heartbeat for id: %u\n", id );
@@ -127,7 +127,7 @@ static void HandlePump( struct sockaddr_in* clientAddr, unsigned int client_len,
    if( client_len < 6 ) return;
     uint32_t val = get_uint32_t( buffer, 2 );
     printf( INFO "Turning pump on for %u milliseconds\n", val );
-    
+
     GPIO_WritePin( &pump_pin, 1 );
 
     struct timespec delay = { val / 1000, ( val % 1000 ) * 1000000 };
@@ -194,7 +194,7 @@ static void UDP_Server_HandleMessage( struct sockaddr_in* clientAddr, unsigned i
                     case ACTION_PUMP:
 					HandlePump( clientAddr, client_len, buffer );
                          break;
-			}	
+			}
 			break;
 
 		default:
@@ -211,8 +211,8 @@ static void* UDP_Server_Thread( void* args )
     // int msg_size;
 
     while( poll ) {
-        bzero( buffer, UDP_SERVER_BUFFER_LENGTH );
-        recvfrom( 
+        memset( buffer, 0, UDP_SERVER_BUFFER_LENGTH );
+        recvfrom(
             serverfd,
             buffer,
             UDP_SERVER_BUFFER_LENGTH,
@@ -239,14 +239,14 @@ int UDP_Server_Init( int port )
         return 0;
     }
 
-    bzero( ( char* )&serverAddr, sizeof( serverAddr ) );
+    memset( ( char* )&serverAddr, 0, sizeof( serverAddr ) );
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = htonl( INADDR_ANY );
     serverAddr.sin_port = htons( port );
 
-    int res = bind( 
-        serverfd, 
-        ( struct sockaddr* )&serverAddr, 
+    int res = bind(
+        serverfd,
+        ( struct sockaddr* )&serverAddr,
         sizeof( serverAddr ) );
     if( res < 0 ) {
         fprintf( stderr, ERROR "Error binding socket to port %d\n", port );

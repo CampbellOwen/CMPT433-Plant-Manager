@@ -2,11 +2,13 @@
 
 #include <DNSServer.h>            //Local DNS Server used for redirecting all requests to the configuration portal
 #include <ESP8266WebServer.h>     //Local WebServer used to serve the configuration portal
-#include <WiFiManager.h> 
+#include <WiFiManager.h>
 #include <WiFiUdp.h>
 #include <Arduino.h>
 #include <string.h>
 #include <EEPROM.h>
+
+#include "../include/dht_moisture.h"
 
 #define HOST_IP "192.168.7.2"
 #define HOST_PORT 12345
@@ -51,7 +53,7 @@ uint32_t try_read_id()
         for( int i = 0; i < 4; i ++ ) {
             char segment = EEPROM.read( i+11 );
               saved_id = ( saved_id | ( segment << (i*8) ) );
-        } 
+        }
         Serial.printf( "Recovered id: %x\n", saved_id );
         EEPROM.end();
         return saved_id;
@@ -77,7 +79,7 @@ void save_id( uint32_t id )
           Serial.printf("\tSegment: %x\n", segment );
           EEPROM.write( i+11, segment );
           delay( 100 );
-    } 
+    }
 
     EEPROM.commit();
     EEPROM.end();
@@ -97,7 +99,7 @@ void setup()
 //    EEPROM.commit();
 //    EEPROM.end();
 //    delay( 50000 );
-    
+
     prev_time = millis();
     Serial.println( "Starting Wifi Manager" );
     WiFiManager wifiManager;
@@ -113,11 +115,13 @@ void setup()
 
     if( !have_id ) {
         char message[] = { 'C', 'r' };
-        
+
         udp.beginPacket( hostip, HOST_PORT);
         udp.write(message);
         udp.endPacket();
     }
+
+    Moisture_setup();
 }
 
 uint32_t get32bitNumber( byte* buffer, int index )
@@ -141,7 +145,7 @@ void handle_message( byte* buffer, int len )
             if( len < 6 ) break;
             switch( buffer[ 1 ] ) {
                case CONFIG_REGISTER:
-                   id = get32bitNumber( buffer, 2 );                  
+                   id = get32bitNumber( buffer, 2 );
                    Serial.printf( "Received id: %u\n", id );
                    save_id( id );
                    have_id = true;
@@ -187,7 +191,7 @@ void send_heartbeat()
 
      char message[6];
      message[ 0 ] = 'S';
-     message[ 1 ] = 'h';   
+     message[ 1 ] = 'h';
      uint32_t n_id = htonl( id );
      memcpy( &message[ 2 ], &n_id, sizeof( uint32_t ) );
 

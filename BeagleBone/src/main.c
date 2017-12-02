@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <include/device_manager.h>
 #include <include/udp_server.h>
+#include <include/moisture.h>
 
 #ifndef PORT
 #define PORT 12345
