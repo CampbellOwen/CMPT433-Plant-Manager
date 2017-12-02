@@ -20,7 +20,7 @@ typedef struct {
 
 } device_t;
 
-void DeviceManager_Init( void );
+int DeviceManager_Init( void );
 
 device_t* DeviceManager_Register( struct sockaddr_in* addr );
 
@@ -31,5 +31,7 @@ int DeviceManager_ReportHeartbeat( struct sockaddr_in* addr, uint32_t id );
 device_t* DeviceManager_GetDevice( uint32_t id );
 
 void DeviceManager_Shutdown( void );
+
+void DeviceManager_SaveMoistureData( device_t* device, uint32_t value );
 
 #endif
