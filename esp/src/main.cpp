@@ -8,6 +8,8 @@
 #include <string.h>
 #include <EEPROM.h>
 
+#include "../include/dht_moisture.h"
+
 #define HOST_IP "192.168.7.2"
 #define HOST_PORT 12345
 
@@ -118,6 +120,8 @@ void setup()
         udp.write(message);
         udp.endPacket();
     }
+
+    Moisture_setup();
 }
 
 uint32_t get32bitNumber( byte* buffer, int index )
