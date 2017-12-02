@@ -1,2 +1,5 @@
 *.swp
 BeagleBone/bin/*
+*.o
+*.db
+*.swo
