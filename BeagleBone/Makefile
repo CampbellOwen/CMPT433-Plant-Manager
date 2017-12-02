@@ -5,31 +5,36 @@ CC = $(BB_CC)
 CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -ldl -D _POSIX_C_SOURCE=199309L
 LFLAGS = -Llib
 INCLUDE = $(wildcard include/*.c) 
-PROD_MAIN = main.c
 SRC = $(wildcard src/*.c)
-TEST = $(wildcard test/*.c)
-TESTNAME = test
-OUTNAME = plantManager
+OBJECTS=$(patsubst %.c, %.o, $(SRC))
 OUTDIR = bin
+OUT_NAME = plantManager
 TARGET_DIR = $(HOME)/cmpt433/public/myApps
-TARGET_NAME=$(OUTNAME)
+TARGET_NAME=$(OUT_NAME)
 DB_NAME = plants.db
 
-all: prod
-runtest: 
-	$(DESKTOP_CC) $(LFLAGS) $(CFLAGS) $(INCLUDE) $(SRC) $(TEST) -o $(OUTDIR)/$(TESTNAME)
-	$(OUTDIR)/$(TESTNAME)
+EXEC=$(OUTDIR)/$(OUT_NAME)
 
-prod:
-	$(CC) $(CFLAGS) $(LFLAGS) $(INCLUDE) $(SRC) $(PROD_MAIN) -o $(OUTDIR)/$(OUTNAME)
-	cp $(OUTDIR)/$(OUTNAME) $(TARGET_DIR)/$(TARGET_NAME)
+all: build $(EXEC)
+
+deploy: all init_db
+
+$(EXEC): $(OBJECTS)
+	$(CC) $(CFLAGS) $(LFLAGS) $(INCLUDE) $(OBJECTS) -o $@
+	cp $(EXEC) $(TARGET_DIR)/$(TARGET_NAME)
+
+$(OBJECTS): src/%.o : src/%.c
+	$(CC) $(CFLAGS) $(LFLAGS) $(INCLUDE) -c $< -o $@
+
+build:
+	@mkdir -p $(OUTDIR)
 
 clean:
-	rm $(OUTDIR)/$(TESTNAME)
-	rm $(OUTDIR)/$(OUTNAME) 
-	rm $(TARGET_DIR)/$(TARGET_NAME) 
+	rm -rf $(OUTDIR)
+	rm -f $(OBJECTS)
+	rm -f $(TARGET_DIR)/$(TARGET_NAME) 
 
 init_db:
-	rm $(OUTDIR)/$(DB_NAME)
+	rm -f $(OUTDIR)/$(DB_NAME)
 	cat sql/init.sql | sqlite3 $(OUTDIR)/$(DB_NAME)
 	cp $(OUTDIR)/$(DB_NAME) $(TARGET_DIR)/$(DB_NAME)
