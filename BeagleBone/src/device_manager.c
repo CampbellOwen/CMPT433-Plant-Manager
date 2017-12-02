@@ -1,5 +1,6 @@
 #include <include/device_manager.h>
 #include <include/device_array.h>
+#include <include/udp_server.h>
 #include <include/define.h>
 
 #include <stdlib.h>
@@ -14,11 +15,34 @@
 #define DB_NAME "plants.db"
 #define INSERT_MOISTURE "INSERT INTO moisture (id, time, value) VALUES ( %u, %llu, %u );"
 
+static pthread_t poll_thread;
+
 static device_array_t* device_arr;
 static pthread_mutex_t lock;
 static struct timespec heart_beat_time;
+static struct timespec poll_time;
 static int should_watch;
 static sqlite3* db;
+
+static void* poll_devices( void* args )
+{
+     while( should_watch ) {
+
+         int num_devices = 0;
+         device_t* devices = DeviceArray_GetAlive( device_arr, &num_devices );
+
+         for( int i = 0; i < num_devices; i++ ) {
+             printf( DEVICE_STATUS "Requesting moisture data from device %u\n", devices[ i ].id );
+             UDP_Server_RequestMoisture( devices[ i ] );
+         }
+
+         free( devices );
+
+         nanosleep( &poll_time, NULL );
+     }
+
+    return NULL;
+}
 
 static void* watch_device( void* args )
 {
@@ -62,8 +86,14 @@ int DeviceManager_Init( void )
 	pthread_mutex_init( &lock, NULL );	
 	device_arr = DeviceArray_Init( DEVICE_MANAGER_DEFAULT_SIZE );
 	srand( time( NULL ) );
+
 	heart_beat_time.tv_sec = 5;
 	heart_beat_time.tv_nsec = 0;
+
+     poll_time.tv_sec = 5;
+	poll_time.tv_nsec = 0;
+
+     pthread_create( &poll_thread, NULL, poll_devices, NULL );
 
      return 1;
 }
@@ -145,6 +175,7 @@ void DeviceManager_Shutdown()
 	for( int i = 0; i < num_living; i++ ) {
 		pthread_join( living_devices[ i ].watch_thread, NULL );
 	}
+     pthread_join( poll_thread, NULL );
 	DeviceArray_Destroy( device_arr );
 	pthread_mutex_destroy( &lock );
 

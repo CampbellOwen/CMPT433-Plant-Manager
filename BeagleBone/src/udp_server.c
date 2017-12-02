@@ -264,3 +264,14 @@ void UDP_Server_Wait( void )
     pthread_join( tid, NULL );
     close( serverfd );
 }
+
+void UDP_Server_RequestMoisture( device_t device )
+{
+	char buffer[ UDP_SERVER_MAX_PACKET ];
+	uint32_t n_id = htonl( device.id );
+	sprintf( buffer, "Sm" );
+	memcpy( &buffer[2] , &n_id, sizeof( uint32_t ) );
+	buffer[ 2 + sizeof( uint32_t ) ] = '\0';
+
+	UDP_Server_SendMessage( device.address, sizeof( device.address ), buffer );
+}

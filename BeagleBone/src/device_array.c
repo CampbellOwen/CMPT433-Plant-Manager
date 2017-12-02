@@ -145,7 +145,7 @@ device_t* DeviceArray_GetAlive( device_array_t* arr, int* len_out )
 	*len_out = 0;
 	pthread_mutex_lock( &arr->arr_lock );
 	{
-		alive_devices = malloc( sizeof( device_t* ) * arr->len );
+		alive_devices = malloc( sizeof( device_t ) * arr->len );
 		if( alive_devices != NULL ) {
 			for( int i = 0; i < arr->len; i++ ) {
 				if( arr->data[ i ]->state == ALIVE ) {
