@@ -17,7 +17,6 @@
 #include <pthread.h>
 #include <math.h>
 #include <include/GPIO.h>
-//#include <sqlite3.h>
 
 #define UDP_SERVER_BUFFER_LENGTH 1024
 #define UDP_SERVER_MAX_PACKET 1500
@@ -34,15 +33,11 @@
 #define ACTION_ACTIVATE 'a'
 #define ACTION_PUMP 'p'
 
-#define DB_NAME "plants.db"
-#define INSERT_MOISTURE "INSERT INTO moisture (id, time, value) VALUES ( %u, %u, %lld );"
-
 static int serverfd;
 static struct sockaddr_in serverAddr;
 static pthread_t tid;
 static int poll = 0;
 static GPIO_Pin_t pump_pin;
-//static sqlite3* db;
 
 static uint32_t get_uint32_t( char* buffer, int index )
 {
@@ -232,13 +227,6 @@ static void* UDP_Server_Thread( void* args )
 
 int UDP_Server_Init( int port )
 {
- //   int ret = sqlite3_open( DB_NAME, &db );
-
- //   if( ret ) {
- //     fprintf( stderr, "Can't open database: %s\n", sqlite3_errmsg( db ) );
- //     return( 0 );
- //   } 
-    
     printf( INFO "UDP server starting\n" );
     printf( INFO "Initializing pump pin\n" );
     pump_pin.pinNumber = 20;
@@ -275,5 +263,4 @@ void UDP_Server_Wait( void )
 {
     pthread_join( tid, NULL );
     close( serverfd );
-//    sqlite3_close( db );
 }
