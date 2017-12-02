@@ -9,9 +9,10 @@
 #include <include/sqlite3.h>
 
 #define DEVICE_MANAGER_DEFAULT_SIZE 64
+#define SQL_STATEMENT_BUFFER_SIZE 1024 
 
 #define DB_NAME "plants.db"
-#define INSERT_MOISTURE "INSERT INTO moisture (id, time, value) VALUES ( %u, %u, %lld );"
+#define INSERT_MOISTURE "INSERT INTO moisture (id, time, value) VALUES ( %u, %llu, %u );"
 
 static device_array_t* device_arr;
 static pthread_mutex_t lock;
@@ -148,7 +149,26 @@ void DeviceManager_Shutdown()
      sqlite3_close( db );
 }
 
-void DeviceManager_SaveMoistureData( device_t* device, int value )
+void DeviceManager_SaveMoistureData( device_t* device, uint32_t value )
 {
+     long long curr_time = ( long long )time( NULL );
 
+     uint32_t id = device->id;
+
+     printf( INFO "Saving moisture data from id: %u, value: %u\n", id, value );
+
+    char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
+
+    sprintf( sql_statement, INSERT_MOISTURE, id, curr_time, value );
+
+    char* err_msg = NULL;
+
+    int ret = sqlite3_exec( db, sql_statement, NULL, NULL, &err_msg );
+    if( ret != SQLITE_OK ) {
+          fprintf( stderr, ERROR "Error writing to SQL: %s\n", err_msg );
+          sqlite3_free( err_msg );
+    }
+    else {
+        printf( INFO "Values succesfully stored in db\n" );
+    }
 }

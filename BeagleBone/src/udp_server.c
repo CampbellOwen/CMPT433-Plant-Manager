@@ -146,31 +146,19 @@ static void HandlePump( struct sockaddr_in* clientAddr, unsigned int client_len,
 
 static void HandleMoisture( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
 {
-    //if( client_len < ( 2 + sizeof( uint32_t ) ) ) {
-    //    return;
-    //}
+    if( client_len < ( 2 + sizeof( uint32_t ) ) ) {
+        return;
+    }
 
-    // uint32_t id = get_uint32_t( buffer, 2 );
-    // uint32_t value = get_uint32_t( buffer, 2 + sizeof( uint32_t ) );
-    // long long curr_time = ( long long )time( NULL );
+     uint32_t id = get_uint32_t( buffer, 2 );
 
-    // printf( "Received moisture data from id: %u, value: %u\n", id, value );
+     device_t* device = DeviceManager_GetDevice( id );
 
-    //char sql_statement[ UDP_SERVER_BUFFER_LENGTH ];
+     uint32_t value = get_uint32_t( buffer, 2 + sizeof( uint32_t ) );
 
-    //sprintf( sql_statement, INSERT_MOISTURE, id, curr_time, value );
+     printf( INFO "Received moisture data from id: %u, value: %u\n", id, value );
 
-    //char* err_msg = NULL;
-
-    //int ret = sqlite3_exec( db, sql_statement, NULL, NULL, &err_msg );
-    //if( ret != SQLITE_OK ) {
-    //      fprintf( stderr, "Error writing to SQL: %s\n", err_msg );
-    //      sqlite3_free( err_msg );
-    //}
-    //else {
-    //    printf( "Values succesfully stored in db\n" );
-    //}
-
+     DeviceManager_SaveMoistureData( device, value );
 }
 
 static void HandleActivate( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
