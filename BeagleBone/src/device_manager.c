@@ -1,5 +1,6 @@
 #include <include/device_manager.h>
 #include <include/device_array.h>
+#include <include/define.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,24 +18,27 @@ static void* watch_device( void* args )
 {
 	device_t* device = (device_t*)args;
 
-	printf( "Starting watch for device %d\n", device->id );
+	printf( DEVICE_STATUS "Starting watch for %d\n", device->id );
 
 	while( should_watch && device->state != TIMEOUT ) {
 		nanosleep( &heart_beat_time, NULL );
 		uint64_t curr_time = time( NULL );
 		pthread_mutex_lock( &lock );
 		{
-			printf( "Current time: %llu; device %d last seen: %llu\n", curr_time, device->id, device->last_seen );
+			printf( DEVICE_STATUS "Checking on device %d at time %llu\n", device->id, curr_time );
 			if( ( curr_time - device->last_seen ) > ( heart_beat_time.tv_sec ) )
 			{
-				printf( "Device %d TIMEOUT\n", device->id );
+				printf( DEVICE_STATUS "Device %d timeout\n", device->id );
 				device->state = TIMEOUT;
 			}
+               else {
+                   printf( DEVICE_STATUS "Device %d okay\n", device->id );
+               }
 		}
 		pthread_mutex_unlock( &lock );
 	}
 
-	printf( "Ending watch for device %d\n", device->id );
+	printf( DEVICE_STATUS "Ending watch for device %d\n", device->id );
 
 	return NULL;
 }
@@ -59,7 +63,7 @@ device_t* DeviceManager_Register( struct sockaddr_in* addr )
 	new_device->address = addr;
 	new_device->state = ALIVE;
 
-	printf( "Registering new device: id %d, port %d\n", id, ntohs( addr->sin_port ) );
+	printf( DEVICE_STATUS "Registering device to id %d\n", id );
 
 	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
 
@@ -76,7 +80,7 @@ device_t* DeviceManager_Reregister( struct sockaddr_in* addr, uint32_t id )
 	new_device->address = addr;
 	new_device->state = ALIVE;
 
-	printf( "Reregistering old device: id %d, port %d\n", id, ntohs( addr->sin_port ) );
+	printf( DEVICE_STATUS "Re-registering old device - id: %d\n", id );
 
 	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
 
@@ -99,7 +103,7 @@ int DeviceManager_ReportHeartbeat( struct sockaddr_in* clientAddr, uint32_t id )
 			device = DeviceManager_Reregister( clientAddr, id );
 		}
 
-		printf( "Heartbeat from %d", id );
+		printf( DEVICE_STATUS "Heartbeat from %d", id );
 
 		device->last_seen = (uint64_t)time( NULL );
 		if( device->state == TIMEOUT ) {

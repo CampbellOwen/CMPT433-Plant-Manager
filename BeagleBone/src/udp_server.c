@@ -1,6 +1,7 @@
 #include <include/udp_server.h>
 #include <include/device_manager.h>
 
+#include <include/define.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -55,7 +56,7 @@ static uint32_t get_uint32_t( char* buffer, int index )
 
 static void UDP_Server_SendMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* message ) {
     int message_len = strlen( message );
-    printf( "Sending message of length: %d\n", message_len );
+    printf( NETWORK "Sending message of length: %d\n", message_len );
     if( strlen( message ) < UDP_SERVER_MAX_PACKET ) {
         sendto(
             serverfd,
@@ -88,19 +89,19 @@ static void SendRegistration( struct sockaddr_in* clientAddr, uint32_t id, unsig
 {
 	char buffer[ UDP_SERVER_MAX_PACKET ];
 	uint32_t n_id = htonl( id );
-    printf( "\tOriginal: %x\n", id );
-    printf( "\thtonl: %x\n", n_id );
+    printf( DEBUG "\tOriginal: %x\n", id );
+    printf( DEBUG "\thtonl: %x\n", n_id );
 	sprintf( buffer, "Cr" );
 	memcpy( &buffer[2] , &n_id, sizeof( uint32_t ) );
 	buffer[ 2 + sizeof( uint32_t ) ] = '\0';
-     printf( "Sending back info: \n" );
-     printf( "\t %c\n", buffer[ 0 ] );
-     printf( "\t %c\n", buffer[ 1 ] );
-     printf( "\t %x\n", buffer[ 2 ] );
-     printf( "\t %x\n", buffer[ 3 ] );
-     printf( "\t %x\n", buffer[ 4 ] );
-     printf( "\t %x\n", buffer[ 5 ] );
-     printf( "\t %x\n", buffer[ 6 ] );
+     printf( DEBUG "Sending back info: \n" );
+     printf( DEBUG "\t %c\n", buffer[ 0 ] );
+     printf( DEBUG "\t %c\n", buffer[ 1 ] );
+     printf( DEBUG "\t %x\n", buffer[ 2 ] );
+     printf( DEBUG "\t %x\n", buffer[ 3 ] );
+     printf( DEBUG "\t %x\n", buffer[ 4 ] );
+     printf( DEBUG "\t %x\n", buffer[ 5 ] );
+     printf( DEBUG "\t %x\n", buffer[ 6 ] );
 
 	UDP_Server_SendMessage( clientAddr, client_len, buffer );
 }
@@ -119,7 +120,7 @@ static void HandleHeartbeat( struct sockaddr_in* clientAddr, unsigned int client
 
      uint32_t id = get_uint32_t( buffer, 2 );
 
-	printf( "Heartbeat for id: %u\n", id );
+	printf( INFO "Heartbeat for id: %u\n", id );
 
 	DeviceManager_ReportHeartbeat( clientAddr, id );
 
@@ -130,15 +131,15 @@ static void HandlePump( struct sockaddr_in* clientAddr, unsigned int client_len,
 {
    if( client_len < 6 ) return;
     uint32_t val = get_uint32_t( buffer, 2 );
-    printf( "Turning pump on for %u milliseconds\n", val );
+    printf( INFO "Turning pump on for %u milliseconds\n", val );
 
     GPIO_WritePin( &pump_pin, 1 );
 
     struct timespec delay = { val / 1000, ( val % 1000 ) * 1000000 };
-    printf("SLEEPING FOR %lu s, %lu ns\n", delay.tv_sec, delay.tv_nsec );
+    printf(INFO "Sleeping for %lu s, %lu ns\n", delay.tv_sec, delay.tv_nsec );
 
     nanosleep( &delay, NULL );
-    printf("DONE SLEEPING");
+    printf(INFO "Done sleeping");
 
     GPIO_WritePin( &pump_pin, 0 );
 }
@@ -179,7 +180,7 @@ static void HandleActivate( struct sockaddr_in* clientAddr, unsigned int client_
 
 static void UDP_Server_HandleMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
 {
-    printf("Received Message from ip: %u on port:%u \n", clientAddr->sin_addr.s_addr, ntohs( clientAddr->sin_port ) );
+    printf( NETWORK "Received Message from ip: %u on port:%u \n", clientAddr->sin_addr.s_addr, ntohs( clientAddr->sin_port ) );
 	if( client_len < 2 ) {
 		return;
 	}
@@ -250,15 +251,15 @@ int UDP_Server_Init( int port )
  //     return( 0 );
  //   }
 
-    printf(" UDP SERVER STARTING \n" );
-    printf(" Initializing pump pin\n" );
+    printf( INFO "UDP server starting\n" );
+    printf( INFO "Initializing pump pin\n" );
     pump_pin.pinNumber = 20;
     GPIO_InitPin( &pump_pin );
 
-    printf("Opening socket\n");
+    printf( INFO "Opening socket\n");
     serverfd = socket( AF_INET, SOCK_DGRAM, 0 );
     if( serverfd < 0 ) {
-        fprintf( stderr, "Error creating socket\n" );
+        fprintf( stderr, ERROR "Error creating socket\n" );
         return 0;
     }
 
@@ -272,11 +273,11 @@ int UDP_Server_Init( int port )
         ( struct sockaddr* )&serverAddr,
         sizeof( serverAddr ) );
     if( res < 0 ) {
-        fprintf( stderr, "Error binding socket to port %d\n", port );
+        fprintf( stderr, ERROR "Error binding socket to port %d\n", port );
         return 0;
     }
     poll = 1;
-    printf("Starting listen\n");
+    printf(INFO "Starting listen\n");
     pthread_create( &tid, NULL, &UDP_Server_Thread, NULL );
 
     return 1;
