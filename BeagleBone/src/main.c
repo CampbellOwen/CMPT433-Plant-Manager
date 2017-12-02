@@ -9,9 +9,9 @@
 int main( void )
 {
 
-	DeviceManager_Init();
+	if( !DeviceManager_Init() ) return 1;
 
-	UDP_Server_Init( PORT );
+	if( !UDP_Server_Init( PORT ) ) return 1;
 
 	UDP_Server_Wait();
 

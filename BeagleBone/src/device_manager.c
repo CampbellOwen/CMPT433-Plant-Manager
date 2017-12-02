@@ -49,13 +49,13 @@ static void* watch_device( void* args )
 	return NULL;
 }
 
-void DeviceManager_Init( void )
+int DeviceManager_Init( void )
 {
     int ret = sqlite3_open( DB_NAME, &db );
 
     if( ret ) {
       fprintf( stderr, ERROR "Can't open database: %s\n", sqlite3_errmsg( db ) );
-      return;
+      return 0;
     } 
 
 	should_watch = 1;
@@ -64,6 +64,8 @@ void DeviceManager_Init( void )
 	srand( time( NULL ) );
 	heart_beat_time.tv_sec = 5;
 	heart_beat_time.tv_nsec = 0;
+
+     return 1;
 }
 
 device_t* DeviceManager_Register( struct sockaddr_in* addr )

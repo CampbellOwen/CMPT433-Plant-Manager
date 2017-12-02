@@ -20,7 +20,7 @@ typedef struct {
 
 } device_t;
 
-void DeviceManager_Init( void );
+int DeviceManager_Init( void );
 
 device_t* DeviceManager_Register( struct sockaddr_in* addr );
 
