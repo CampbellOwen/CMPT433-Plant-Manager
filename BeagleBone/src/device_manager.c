@@ -6,13 +6,18 @@
 #include <stdio.h>
 #include <time.h>
 #include <pthread.h>
+#include <include/sqlite3.h>
 
 #define DEVICE_MANAGER_DEFAULT_SIZE 64
+
+#define DB_NAME "plants.db"
+#define INSERT_MOISTURE "INSERT INTO moisture (id, time, value) VALUES ( %u, %u, %lld );"
 
 static device_array_t* device_arr;
 static pthread_mutex_t lock;
 static struct timespec heart_beat_time;
 static int should_watch;
+static sqlite3* db;
 
 static void* watch_device( void* args )
 {
@@ -45,6 +50,13 @@ static void* watch_device( void* args )
 
 void DeviceManager_Init( void )
 {
+    int ret = sqlite3_open( DB_NAME, &db );
+
+    if( ret ) {
+      fprintf( stderr, ERROR "Can't open database: %s\n", sqlite3_errmsg( db ) );
+      return;
+    } 
+
 	should_watch = 1;
 	pthread_mutex_init( &lock, NULL );	
 	device_arr = DeviceArray_Init( DEVICE_MANAGER_DEFAULT_SIZE );
@@ -132,4 +144,11 @@ void DeviceManager_Shutdown()
 	}
 	DeviceArray_Destroy( device_arr );
 	pthread_mutex_destroy( &lock );
+
+     sqlite3_close( db );
+}
+
+void DeviceManager_SaveMoistureData( device_t* device, int value )
+{
+
 }

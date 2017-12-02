@@ -32,4 +32,6 @@ device_t* DeviceManager_GetDevice( uint32_t id );
 
 void DeviceManager_Shutdown( void );
 
+void DeviceManager_SaveMoistureData( device_t* device, int value );
+
 #endif

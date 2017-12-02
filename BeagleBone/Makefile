@@ -2,7 +2,7 @@ DESKTOP_CC = gcc
 BB_CC = arm-linux-gnueabihf-gcc
 
 CC = $(BB_CC)
-CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -D _POSIX_C_SOURCE=199309L
+CFLAGS = -I./ -Wall -Werror -std=c99 -g -lm -lpthread -ldl -D _POSIX_C_SOURCE=199309L
 LFLAGS = -Llib
 INCLUDE = $(wildcard include/*.c) 
 PROD_MAIN = main.c
