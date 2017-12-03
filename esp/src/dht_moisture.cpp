@@ -20,6 +20,11 @@
 
 DHT dht(DHTPIN, DHTTYPE);
 
+static int moistureValue = 0;
+static float humidity = 0;
+static float tempCelsius = 0;
+static float heatIndexCelsius = 0;
+
 void Moisture_setup()
 {
    dht.begin();
@@ -28,13 +33,13 @@ void Moisture_setup()
 void Moisture_getSensorData()
 {
   // Moisture is on a scale of 0 to 100 (with 100 being more moist)
-  int moistureValue = (analogRead(MOISTURE_PIN) / A2D_MAX_READING) * 100;
+  moistureValue = (analogRead(MOISTURE_PIN) / A2D_MAX_READING) * 100;
   Serial.println(moistureValue);
 
-  float humidity = dht.readHumidity();
+  humidity = dht.readHumidity();
 
   // Read temperature as Celsius (the default)
-  float tempCelsius = dht.readTemperature();
+  tempCelsius = dht.readTemperature();
   // Read temperature as Fahrenheit (isFahrenheit = true)
   float tempFahr = dht.readTemperature(true);
 
@@ -47,7 +52,7 @@ void Moisture_getSensorData()
   // Compute heat index in Fahrenheit (the default)
   float heatIndexFahr = dht.computeHeatIndex(tempFahr, humidity);
   // Compute heat index in Celsius (isFahreheit = false)
-  float heatIndexCelsius = dht.computeHeatIndex(tempCelsius, humidity, false);
+  heatIndexCelsius = dht.computeHeatIndex(tempCelsius, humidity, false);
 
   Serial.println(humidity);
   Serial.println(tempCelsius);
@@ -55,6 +60,14 @@ void Moisture_getSensorData()
   Serial.println(heatIndexCelsius);
   Serial.println(heatIndexFahr);
 }
+
+int Moisture_getMoisture()
+{
+   Moisture_getSensorData();
+
+   return moistureValue;  
+}
+
 
 void Moisture_readSerial()
 {
