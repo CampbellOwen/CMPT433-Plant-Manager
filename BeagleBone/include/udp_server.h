@@ -6,6 +6,7 @@
 int UDP_Server_Init( int port );
 
 void UDP_Server_RequestMoisture( device_t device );
+void UDP_Server_RequestPump( struct sockaddr_in* clientAddr, unsigned int client_len, uint32_t duration  );
 
 void UDP_Server_Wait( void );
 

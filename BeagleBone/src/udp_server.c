@@ -49,8 +49,7 @@ static uint32_t get_uint32_t( char* buffer, int index )
 	return ntohl( id );
 }
 
-static void UDP_Server_SendMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* message ) {
-    int message_len = strlen( message );
+static void UDP_Server_SendMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* message, int message_len ) {
     printf( NETWORK "Sending message length: %d: %s\n", message_len, message );
     if( strlen( message ) < UDP_SERVER_MAX_PACKET ) {
         sendto(
@@ -98,7 +97,7 @@ static void SendRegistration( struct sockaddr_in* clientAddr, uint32_t id, unsig
      printf( DEBUG "\t %x\n", buffer[ 5 ] );
      printf( DEBUG "\t %x\n", buffer[ 6 ] );
 
-	UDP_Server_SendMessage( clientAddr, client_len, buffer );
+	UDP_Server_SendMessage( clientAddr, client_len, buffer, 6 );
 }
 
 static void HandleRegistration( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
@@ -119,7 +118,7 @@ static void HandleHeartbeat( struct sockaddr_in* clientAddr, unsigned int client
 
 	DeviceManager_ReportHeartbeat( clientAddr, id );
 
-	UDP_Server_SendMessage( clientAddr, client_len, buffer );
+	UDP_Server_SendMessage( clientAddr, client_len, buffer, 6 );
 }
 
 static void HandlePump( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
@@ -274,5 +273,22 @@ void UDP_Server_RequestMoisture( device_t device )
 	memcpy( &buffer[2] , &n_id, sizeof( uint32_t ) );
 	buffer[ 2 + sizeof( uint32_t ) ] = '\0';
 
-	UDP_Server_SendMessage( device.address, sizeof( *device.address ), buffer );
+	UDP_Server_SendMessage( device.address, sizeof( *device.address ), buffer, 6 );
+}
+
+void UDP_Server_RequestPump( struct sockaddr_in* clientAddr, unsigned int client_len, uint32_t duration  )
+{
+     char buffer[ UDP_SERVER_MAX_PACKET ];
+
+	uint32_t duration_changed = htonl( duration );
+	sprintf( buffer, "Ap" );
+	memcpy( &buffer[2] , &duration_changed, sizeof( uint32_t ) );
+	buffer[ 2 + sizeof( uint32_t ) ] = '\0';
+
+     duration = get_uint32_t( buffer, 2 );
+     printf( DEBUG "duration is %u\n", duration );
+
+     printf( DEBUG "Pump buffer: %c %c %x %x %x %x\n", buffer[ 0 ], buffer[ 1 ], buffer[ 2 ], buffer[ 3 ], buffer[ 4 ], buffer[ 5 ] );
+
+	UDP_Server_SendMessage( clientAddr, client_len, buffer, 6 );
 }

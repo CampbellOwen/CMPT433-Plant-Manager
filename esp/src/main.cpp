@@ -157,13 +157,13 @@ void write32bitNumber( char* buffer, int index, uint32_t value )
 uint32_t get32bitNumber( char* buffer, int index )
 {
     Serial.printf( "Pre swap: %x %x %x %x\n", buffer[index], buffer[index+1], buffer[index+2], buffer[index+3] );
-     uint32_t id = 0;
-     id =    buffer[index+3] << 24 |
+     uint32_t value = 0;
+     value = buffer[index+3] << 24 |
              buffer[index+2] << 16 |
              buffer[index+1] << 8 |
              buffer[index];
-    Serial.printf( "Post swap: %x\n", id);
-	return ntohl( id );
+    Serial.printf( "Post swap: %x\n", value);
+	return ntohl( value );
 
 }
 

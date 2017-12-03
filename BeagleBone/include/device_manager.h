@@ -49,4 +49,6 @@ void DeviceManager_Shutdown( void );
 
 void DeviceManager_SaveMoistureData( device_t* device, uint32_t value );
 
+void DeviceManager_ActivatePump( device_t* device, uint32_t duration );
+
 #endif
