@@ -29,7 +29,7 @@
 #define ACTION_ACTIVATE 'a'
 #define ACTION_PUMP 'p'
 
-#define PUMP_PIN D4
+#define PUMP_PIN D0
 
 IPAddress hostip( 192, 168, 86, 45 );
 
@@ -41,6 +41,11 @@ uint32_t id = 0;
 bool have_id = false;
 unsigned long curr_time;
 unsigned long prev_time;
+
+
+bool pump_on = false;
+unsigned long pump_start = 0;
+unsigned long pump_duration = 0;
 
 uint32_t try_read_id()
 {
@@ -66,11 +71,18 @@ uint32_t try_read_id()
     }
 }
 
-void activate_pump( int time_duration )
+void activate_pump( uint32_t time_duration )
 {
+    Serial.printf( "Turning on pump for %u milliseconds\n", time_duration );
+
     digitalWrite( PUMP_PIN, HIGH );
-    delay( time_duration );
-    digitalWrite( PUMP_PIN, LOW );
+    pump_on = true;
+    pump_start = millis();
+    pump_duration = time_duration;
+
+//    digitalWrite( PUMP_PIN, HIGH );
+//    delay( time_duration );
+//    digitalWrite( PUMP_PIN, LOW );
 }
 
 void save_id( uint32_t id )
@@ -111,6 +123,7 @@ void setup()
 
     prev_time = millis();
     Serial.println( "Starting Wifi Manager" );
+    //WiFi.disconnect();
     WiFiManager wifiManager;
     wifiManager.autoConnect( "PLANT" );
     Serial.println( "WifiManager connected" );
@@ -149,9 +162,18 @@ uint32_t get32bitNumber( char* buffer, int index )
              buffer[index+2] << 16 |
              buffer[index+1] << 8 |
              buffer[index];
-	return ntohl( id );
     Serial.printf( "Post swap: %x\n", id);
+	return ntohl( id );
 
+}
+
+void handle_pump( char* buffer, int len )
+{
+     Serial.println( "Received request for pump" );
+
+     uint32_t time_val = get32bitNumber( buffer, 2 );
+
+     activate_pump( time_val );
 }
 
 void handle_moisture( char* buffer, int len )
@@ -206,6 +228,11 @@ void handle_message( char* buffer, int len )
             }
             break;
         case CATEGORY_ACTION:
+            switch( buffer[ 1 ] ) {
+                case ACTION_PUMP:
+                    handle_pump( buffer, len );
+                    break;
+            }
 
             break;
     }
@@ -269,5 +296,10 @@ void loop()
         Serial.println( "Sending heartbeat" );
         send_heartbeat();
         prev_time = curr_time;
+    }
+
+    if( pump_on && curr_time - pump_start > pump_duration ) {
+        pump_on = false;
+        digitalWrite( PUMP_PIN, LOW );
     }
 }
