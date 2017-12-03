@@ -43,6 +43,8 @@ int DeviceManager_ReportHeartbeat( struct sockaddr_in* addr, uint32_t id );
 
 device_t* DeviceManager_GetDevice( uint32_t id );
 
+device_t* DeviceManager_GetAll( int* len );
+
 moisture_row_t* DeviceManager_GetMoistureAfterTime( device_t* device, long long timestamp, int* arr_len );
 
 void DeviceManager_Shutdown( void );

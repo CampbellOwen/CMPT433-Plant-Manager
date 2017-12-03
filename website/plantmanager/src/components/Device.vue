@@ -30,6 +30,10 @@ a {
 }
 
 .device {
+    width:400px;
+    height:400px;
      background-color:#E1E2E1;
+     padding:45px;
+     margin:20px;
 }
 </style>

@@ -82,7 +82,7 @@ a {
   color: #42b983;
 }
 
-.device-grid {
+.device-grid-old {
 
     display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -90,5 +90,11 @@ a {
   grid-auto-rows: minmax(400px, auto);
   justify-content:center;
   align-content: end;
+}
+
+.device-grid {
+     display:flex;
+     flex-direction:row;
+     flex-wrap:wrap;
 }
 </style>

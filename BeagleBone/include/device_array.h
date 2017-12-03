@@ -26,5 +26,7 @@ device_t* DeviceArray_GetId( device_array_t* arr, uint32_t id );
 
 //User must free the array returned, but none of the contents
 device_t* DeviceArray_GetAlive( device_array_t* arr, int* len_out );
+device_t* DeviceArray_GetAll( device_array_t* arr, int* len_out );
+
 
 #endif

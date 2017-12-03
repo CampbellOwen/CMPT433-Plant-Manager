@@ -280,3 +280,7 @@ void DeviceManager_ActivatePump( device_t* device, uint32_t duration )
      UDP_Server_RequestPump( device->address, sizeof( *device->address ), duration );
 }
 
+device_t* DeviceManager_GetAll( int* len )
+{
+     return DeviceArray_GetAll( device_arr, len );
+}
