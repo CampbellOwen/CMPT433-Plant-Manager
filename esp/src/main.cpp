@@ -31,6 +31,8 @@
 #define ACTION_ACTIVATE 'a'
 #define ACTION_PUMP 'p'
 
+#define PUMP_PIN D0
+
 IPAddress hostip( 192, 168, 0, 18 );
 
 WiFiUDP udp;
@@ -41,6 +43,11 @@ uint32_t id = 0;
 bool have_id = false;
 unsigned long curr_time;
 unsigned long prev_time;
+
+
+bool pump_on = false;
+unsigned long pump_start = 0;
+unsigned long pump_duration = 0;
 
 uint32_t try_read_id()
 {
@@ -64,6 +71,20 @@ uint32_t try_read_id()
         EEPROM.end();
         return 0;
     }
+}
+
+void activate_pump( uint32_t time_duration )
+{
+    Serial.printf( "Turning on pump for %u milliseconds\n", time_duration );
+
+    digitalWrite( PUMP_PIN, HIGH );
+    pump_on = true;
+    pump_start = millis();
+    pump_duration = time_duration;
+
+//    digitalWrite( PUMP_PIN, HIGH );
+//    delay( time_duration );
+//    digitalWrite( PUMP_PIN, LOW );
 }
 
 void save_id( uint32_t id )
@@ -104,6 +125,7 @@ void setup()
 
     prev_time = millis();
     Serial.println( "Starting Wifi Manager" );
+    //WiFi.disconnect();
     WiFiManager wifiManager;
     wifiManager.autoConnect( "PLANT" );
     Serial.println( "WifiManager connected" );
@@ -114,6 +136,8 @@ void setup()
     Serial.println( "Sending init packet to host" );
 
     id = try_read_id();
+
+    pinMode( PUMP_PIN, OUTPUT );
 
     if( !have_id ) {
         char message[] = { 'C', 'r' };
@@ -135,17 +159,26 @@ void write32bitNumber( char* buffer, int index, uint32_t value )
 uint32_t get32bitNumber( char* buffer, int index )
 {
     Serial.printf( "Pre swap: %x %x %x %x\n", buffer[index], buffer[index+1], buffer[index+2], buffer[index+3] );
-     uint32_t id = 0;
-     id =    buffer[index+3] << 24 |
+     uint32_t value = 0;
+     value = buffer[index+3] << 24 |
              buffer[index+2] << 16 |
              buffer[index+1] << 8 |
              buffer[index];
-	return ntohl( id );
-    Serial.printf( "Post swap: %x\n", id);
+    Serial.printf( "Post swap: %x\n", value);
+	return ntohl( value );
 
 }
 
-void HandleSensor( char* buffer, int len, char sensorType )
+void handle_pump( char* buffer, int len )
+{
+     Serial.println( "Received request for pump" );
+
+     uint32_t time_val = get32bitNumber( buffer, 2 );
+
+     activate_pump( time_val );
+}
+
+void handle_sensor( char* buffer, int len )
 {
     char message[16];
     int value;
@@ -207,17 +240,22 @@ void handle_message( char* buffer, int len )
         case CATEGORY_STATUS:
             switch( buffer[ 1 ] ) {
                case STATUS_MOISTURE:
-                   HandleSensor( buffer, len, STATUS_MOISTURE );
+                   handle_sensor( buffer, len, STATUS_MOISTURE );
                    break;
                case STATUS_HUMIDITY:
-                   HandleSensor(buffer, len, STATUS_HUMIDITY);
+                   handle_sensor(buffer, len, STATUS_HUMIDITY);
                    break;
                case STATUS_TEMPERATURE:
-                   HandleSensor(buffer, len, STATUS_TEMPERATURE);
+                   handle_sensor(buffer, len, STATUS_TEMPERATURE);
                    break;
             }
             break;
         case CATEGORY_ACTION:
+            switch( buffer[ 1 ] ) {
+                case ACTION_PUMP:
+                    handle_pump( buffer, len );
+                    break;
+            }
 
             break;
     }
@@ -281,5 +319,10 @@ void loop()
         Serial.println( "Sending heartbeat" );
         send_heartbeat();
         prev_time = curr_time;
+    }
+
+    if( pump_on && curr_time - pump_start > pump_duration ) {
+        pump_on = false;
+        digitalWrite( PUMP_PIN, LOW );
     }
 }

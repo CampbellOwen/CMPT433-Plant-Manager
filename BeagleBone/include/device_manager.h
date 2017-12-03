@@ -49,4 +49,6 @@ void DeviceManager_Shutdown( void );
 
 void DeviceManager_SaveSensorData( device_t* device, uint32_t value, char sensorType );
 
+void DeviceManager_ActivatePump( device_t* device, uint32_t duration );
+
 #endif

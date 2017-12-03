@@ -150,6 +150,8 @@ device_t* DeviceManager_Reregister( struct sockaddr_in* addr, uint32_t id )
 //     }
 //
 //     free( vals );
+//
+     //DeviceManager_ActivatePump( new_device, 1000 );
 
 	return new_device;
 }
@@ -286,3 +288,12 @@ moisture_row_t* DeviceManager_GetMoistureAfterTime( device_t* device, long long 
 
     return args.rows;
 }
+
+void DeviceManager_ActivatePump( device_t* device, uint32_t duration )
+{
+     uint32_t id = device->id;
+     printf( INFO "Activating %u's pump for %u milliseconds\n", id, duration );
+
+     UDP_Server_RequestPump( device->address, sizeof( *device->address ), duration );
+}
+
