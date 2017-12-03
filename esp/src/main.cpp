@@ -32,7 +32,7 @@
 IPAddress hostip( 192, 168, 86, 45 );
 
 WiFiUDP udp;
-byte buffer[ BUFFER_SIZE ];
+char buffer[ BUFFER_SIZE ];
 char reply[] = "hello there";
 bool init_sent = false;
 uint32_t id = 0;
@@ -107,7 +107,7 @@ void setup()
     Serial.println( "WifiManager connected" );
 
     Serial.printf( "Starting UDP Server on port %d\n", HOST_PORT );
-    udp.begin( 8088 );
+    udp.begin( 12345 );
 
     Serial.println( "Sending init packet to host" );
 
@@ -124,7 +124,13 @@ void setup()
     Moisture_setup();
 }
 
-uint32_t get32bitNumber( byte* buffer, int index )
+void write32bitNumber( char* buffer, int index, uint32_t value )
+{
+     uint32_t val = htonl( value );
+     memcpy( &buffer[ index ], &val, sizeof( uint32_t ) );
+}
+
+uint32_t get32bitNumber( char* buffer, int index )
 {
     Serial.printf( "Pre swap: %x %x %x %x\n", buffer[index], buffer[index+1], buffer[index+2], buffer[index+3] );
      uint32_t id = 0;
@@ -137,31 +143,65 @@ uint32_t get32bitNumber( byte* buffer, int index )
 
 }
 
-void handle_message( byte* buffer, int len )
+void handle_moisture( char* buffer, int len )
 {
+    Serial.println( "Received request for moisture" );
+
+    char message[16];
+
+    message[ 0 ] = 'S';
+    message[ 1 ] = 'm';
+     
+    write32bitNumber( message, 2, id );
+
+    int value = Moisture_getMoisture();
+    Serial.printf( "Current moisture level: %d\n", value );
+
+    write32bitNumber( message, 6, value );
+
+    udp.beginPacket(udp.remoteIP(), udp.remotePort());
+    udp.write( message );
+    udp.endPacket();
+}
+
+void handle_register( char* buffer, int len )
+{
+   id = get32bitNumber( buffer, 2 );
+   Serial.printf( "Received id: %u\n", id );
+   save_id( id );
+   have_id = true;
+}
+
+void handle_message( char* buffer, int len )
+{
+    buffer[ len ] ='\0';
+     Serial.printf( "Received message: %s\n", buffer );
+
     if( len < 2 ) return;
     switch( buffer[ 0 ] ) {
         case CATEGORY_CONFIG:
             if( len < 6 ) break;
             switch( buffer[ 1 ] ) {
                case CONFIG_REGISTER:
-                   id = get32bitNumber( buffer, 2 );
-                   Serial.printf( "Received id: %u\n", id );
-                   save_id( id );
-                   have_id = true;
+                   handle_register( buffer, len );
                    break;
             }
             break;
         case CATEGORY_STATUS:
+            switch( buffer[ 1 ] ) {
+               case STATUS_MOISTURE:
+                   handle_moisture( buffer, len );
+                   break;
+            }
             break;
         case CATEGORY_ACTION:
 
             break;
     }
 
-    udp.beginPacket(udp.remoteIP(), udp.remotePort());
-    udp.write(reply);
-    udp.endPacket();
+   // udp.beginPacket(udp.remoteIP(), udp.remotePort());
+   // udp.write(reply);
+   // udp.endPacket();
 }
 
 void udp_loop()
@@ -192,9 +232,10 @@ void send_heartbeat()
      char message[6];
      message[ 0 ] = 'S';
      message[ 1 ] = 'h';
-     uint32_t n_id = htonl( id );
-     memcpy( &message[ 2 ], &n_id, sizeof( uint32_t ) );
-
+//     uint32_t n_id = htonl( id );
+//     memcpy( &message[ 2 ], &n_id, sizeof( uint32_t ) );
+//
+     write32bitNumber( message, 2, id );
      Serial.printf( "Sending heartbeat message: ");
      Serial.printf( "\t%x\n", message[ 0 ] );
      Serial.printf( "\t%x\n", message[ 1 ] );

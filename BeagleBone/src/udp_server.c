@@ -51,7 +51,7 @@ static uint32_t get_uint32_t( char* buffer, int index )
 
 static void UDP_Server_SendMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* message ) {
     int message_len = strlen( message );
-    printf( NETWORK "Sending message of length: %d\n", message_len );
+    printf( NETWORK "Sending message length: %d: %s\n", message_len, message );
     if( strlen( message ) < UDP_SERVER_MAX_PACKET ) {
         sendto(
             serverfd,
@@ -161,10 +161,11 @@ static void HandleActivate( struct sockaddr_in* clientAddr, unsigned int client_
 	// TODO nothing to activate yet
 }
 
-static void UDP_Server_HandleMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
+static void UDP_Server_HandleMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer, int len )
 {
-    printf( NETWORK "Received Message from ip: %u on port:%u \n", clientAddr->sin_addr.s_addr, ntohs( clientAddr->sin_port ) );
-	if( client_len < 2 ) {
+    buffer[ len ] = '\0';
+    printf( NETWORK "Received message from ip: %u on port:%u \n\t%s\n", clientAddr->sin_addr.s_addr, ntohs( clientAddr->sin_port ), buffer );
+	if( len < 2 ) {
 		return;
 	}
 
@@ -212,14 +213,14 @@ static void* UDP_Server_Thread( void* args )
 
     while( poll ) {
         memset( buffer, 0, UDP_SERVER_BUFFER_LENGTH );
-        recvfrom(
+        int len = recvfrom(
             serverfd,
             buffer,
             UDP_SERVER_BUFFER_LENGTH,
             0,
             ( struct sockaddr* )&clientAddr,
             &client_len );
-        UDP_Server_HandleMessage( &clientAddr, client_len, buffer );
+        UDP_Server_HandleMessage( &clientAddr, client_len, buffer, len );
 
     }
     return NULL;
@@ -273,5 +274,5 @@ void UDP_Server_RequestMoisture( device_t device )
 	memcpy( &buffer[2] , &n_id, sizeof( uint32_t ) );
 	buffer[ 2 + sizeof( uint32_t ) ] = '\0';
 
-	UDP_Server_SendMessage( device.address, sizeof( device.address ), buffer );
+	UDP_Server_SendMessage( device.address, sizeof( *device.address ), buffer );
 }

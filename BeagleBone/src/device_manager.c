@@ -127,6 +127,8 @@ device_t* DeviceManager_Reregister( struct sockaddr_in* addr, uint32_t id )
 
 	printf( DEVICE_STATUS "Re-registering old device - id: %d\n", id );
 
+     printf( DEBUG "Port: %d\n", ntohs( new_device->address->sin_port ) );
+
 	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
 
 	DeviceArray_Put( device_arr, new_device );

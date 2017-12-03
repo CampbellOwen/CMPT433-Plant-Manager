@@ -3,6 +3,7 @@
 
 void Moisture_setup();
 void Moisture_getSensorData();
+int  Moisture_getMoisture();
 void Moisture_readSerial();
 
 #endif
