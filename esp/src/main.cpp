@@ -25,11 +25,13 @@
 
 #define STATUS_HEARTBEAT 'h'
 #define STATUS_MOISTURE 'm'
+#define STATUS_HUMIDITY 'u'
+#define STATUS_TEMPERATURE 't'
 
 #define ACTION_ACTIVATE 'a'
 #define ACTION_PUMP 'p'
 
-IPAddress hostip( 192, 168, 86, 45 );
+IPAddress hostip( 192, 168, 0, 18 );
 
 WiFiUDP udp;
 char buffer[ BUFFER_SIZE ];
@@ -143,24 +145,39 @@ uint32_t get32bitNumber( char* buffer, int index )
 
 }
 
-void handle_moisture( char* buffer, int len )
+void HandleSensor( char* buffer, int len, char sensorType )
 {
-    Serial.println( "Received request for moisture" );
-
     char message[16];
+    int value;
 
-    message[ 0 ] = 'S';
-    message[ 1 ] = 'm';
-     
+    message[ 0 ] = CATEGORY_STATUS;
+
+    switch(sensorType) {
+      case STATUS_MOISTURE:
+        message[ 1 ] = STATUS_MOISTURE;
+        Serial.println( "Received request for moisture" );
+        value = Moisture_getMoisture();
+        Serial.printf( "Current moisture level: %d\n", value );
+        break;
+      case STATUS_HUMIDITY:
+        message[ 1 ] = STATUS_HUMIDITY;
+        Serial.println( "Received request for humidity" );
+        value = Moisture_getHumidity();
+        Serial.printf( "Current humidity level: %d\n", value );
+        break;
+      case STATUS_TEMPERATURE:
+        message[ 1 ] = STATUS_TEMPERATURE;
+        Serial.println( "Received request for temperature" );
+        value = Moisture_getTemperature();
+        Serial.printf( "Current temperature level: %d\n", value );
+        break;
+    }
+
     write32bitNumber( message, 2, id );
-
-    int value = Moisture_getMoisture();
-    Serial.printf( "Current moisture level: %d\n", value );
-
     write32bitNumber( message, 6, value );
 
     udp.beginPacket(udp.remoteIP(), udp.remotePort());
-    udp.write( message );
+    udp.write( message, 16 );
     udp.endPacket();
 }
 
@@ -190,7 +207,13 @@ void handle_message( char* buffer, int len )
         case CATEGORY_STATUS:
             switch( buffer[ 1 ] ) {
                case STATUS_MOISTURE:
-                   handle_moisture( buffer, len );
+                   HandleSensor( buffer, len, STATUS_MOISTURE );
+                   break;
+               case STATUS_HUMIDITY:
+                   HandleSensor(buffer, len, STATUS_HUMIDITY);
+                   break;
+               case STATUS_TEMPERATURE:
+                   HandleSensor(buffer, len, STATUS_TEMPERATURE);
                    break;
             }
             break;
@@ -230,8 +253,8 @@ void send_heartbeat()
 {
 
      char message[6];
-     message[ 0 ] = 'S';
-     message[ 1 ] = 'h';
+     message[ 0 ] = CATEGORY_STATUS;
+     message[ 1 ] = STATUS_HEARTBEAT;
 //     uint32_t n_id = htonl( id );
 //     memcpy( &message[ 2 ], &n_id, sizeof( uint32_t ) );
 //

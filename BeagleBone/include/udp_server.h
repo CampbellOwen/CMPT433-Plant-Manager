@@ -5,7 +5,7 @@
 
 int UDP_Server_Init( int port );
 
-void UDP_Server_RequestMoisture( device_t device );
+void UDP_Server_RequestSensor( device_t device, char sensorType );
 
 void UDP_Server_Wait( void );
 

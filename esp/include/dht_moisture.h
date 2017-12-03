@@ -2,8 +2,8 @@
 #define _MOISTURE_H_
 
 void Moisture_setup();
-void Moisture_getSensorData();
-int  Moisture_getMoisture();
-void Moisture_readSerial();
+int Moisture_getMoisture();
+int Moisture_getHumidity();
+int Moisture_getTemperature();
 
 #endif

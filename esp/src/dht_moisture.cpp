@@ -30,54 +30,45 @@ void Moisture_setup()
    dht.begin();
 }
 
-void Moisture_getSensorData()
-{
-  // Moisture is on a scale of 0 to 100 (with 100 being more moist)
-  moistureValue = (analogRead(MOISTURE_PIN) / A2D_MAX_READING) * 100;
-  Serial.println(moistureValue);
-
-  humidity = dht.readHumidity();
-
-  // Read temperature as Celsius (the default)
-  tempCelsius = dht.readTemperature();
-  // Read temperature as Fahrenheit (isFahrenheit = true)
-  float tempFahr = dht.readTemperature(true);
-
-  // Check if any reads failed
-  if (isnan(humidity) || isnan(tempCelsius) || isnan(tempFahr)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return;
-  }
-
-  // Compute heat index in Fahrenheit (the default)
-  float heatIndexFahr = dht.computeHeatIndex(tempFahr, humidity);
-  // Compute heat index in Celsius (isFahreheit = false)
-  heatIndexCelsius = dht.computeHeatIndex(tempCelsius, humidity, false);
-
-  Serial.println(humidity);
-  Serial.println(tempCelsius);
-  Serial.println(tempFahr);
-  Serial.println(heatIndexCelsius);
-  Serial.println(heatIndexFahr);
-}
-
 int Moisture_getMoisture()
 {
-   Moisture_getSensorData();
+  // Moisture is on a scale of 0 to 100 (with 100 being more moist)
+  // A0's input voltage range is from 0 to 1V
+  int moisture = analogRead(MOISTURE_PIN);
 
-   return moistureValue;  
+  // Check if reading from the sensor failed
+  if (isnan(moisture)) {
+    Serial.println("Failed to read from moisture sensor!");
+    return -1;
+  }
+
+  return moisture;
 }
 
-
-void Moisture_readSerial()
+int Moisture_getHumidity()
 {
-  if (Serial.available() > 0)
-  {
-    String readString = Serial.readStringUntil('\n');
+  int humidity = dht.readHumidity();
 
-    if (readString == "get sensor data")
-    {
-      Moisture_getSensorData();
-    }
+  // Check if reading from the humidity failed
+  if (isnan(humidity)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return -1;
   }
+
+  Serial.printf("Humidity: %d\n", humidity);
+  return humidity;
+}
+
+int Moisture_getTemperature()
+{
+  // Read temperature as Celsius (the default)
+  int tempCelsius = dht.readTemperature();
+
+  // Check if any reads failed
+  if (isnan(tempCelsius)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return -1;
+  }
+
+  Serial.printf("Temperature: %d\n", tempCelsius);
 }

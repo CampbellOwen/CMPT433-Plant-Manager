@@ -29,6 +29,8 @@
 
 #define STATUS_HEARTBEAT 'h'
 #define STATUS_MOISTURE 'm'
+#define STATUS_HUMIDITY 'u'
+#define STATUS_TEMPERATURE 't'
 
 #define ACTION_ACTIVATE 'a'
 #define ACTION_PUMP 'p'
@@ -139,21 +141,29 @@ static void HandlePump( struct sockaddr_in* clientAddr, unsigned int client_len,
     GPIO_WritePin( &pump_pin, 0 );
 }
 
-static void HandleMoisture( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
+static void HandleSensor( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer, char sensorType )
 {
     if( client_len < ( 2 + sizeof( uint32_t ) ) ) {
-        return;
+      return;
     }
 
-     uint32_t id = get_uint32_t( buffer, 2 );
+    uint32_t id = get_uint32_t( buffer, 2 );
+    device_t* device = DeviceManager_GetDevice( id );
+    uint32_t value = get_uint32_t( buffer, 2 + sizeof( uint32_t ) );
 
-     device_t* device = DeviceManager_GetDevice( id );
+    switch(sensorType) {
+     case STATUS_MOISTURE:
+       printf( INFO "Received moisture data from id: %u, value: %u\n", id, value );
+       break;
+     case STATUS_HUMIDITY:
+       printf( INFO "Received humidity data from id: %u, value: %u\n", id, value );
+       break;
+     case STATUS_TEMPERATURE:
+       printf( INFO "Received temperature data from id: %u, value: %u\n", id, value );
+       break;
+    }
 
-     uint32_t value = get_uint32_t( buffer, 2 + sizeof( uint32_t ) );
-
-     printf( INFO "Received moisture data from id: %u, value: %u\n", id, value );
-
-     DeviceManager_SaveMoistureData( device, value );
+    DeviceManager_SaveSensorData( device, value, sensorType );
 }
 
 static void HandleActivate( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
@@ -183,8 +193,15 @@ static void UDP_Server_HandleMessage( struct sockaddr_in* clientAddr, unsigned i
 					HandleHeartbeat( clientAddr, client_len, buffer );
 					break;
 				case STATUS_MOISTURE:
-					HandleMoisture( clientAddr, client_len, buffer );
-			}
+					HandleSensor( clientAddr, client_len, buffer, STATUS_MOISTURE );
+          break;
+        case STATUS_HUMIDITY:
+          HandleSensor( clientAddr, client_len, buffer, STATUS_HUMIDITY );
+          break;
+        case STATUS_TEMPERATURE:
+          HandleSensor( clientAddr, client_len, buffer, STATUS_TEMPERATURE );
+          break;
+      }
 
 			break;
 		case CATEGORY_ACTION:
@@ -266,13 +283,24 @@ void UDP_Server_Wait( void )
     close( serverfd );
 }
 
-void UDP_Server_RequestMoisture( device_t device )
+void UDP_Server_RequestSensor( device_t device, char sensorType )
 {
 	char buffer[ UDP_SERVER_MAX_PACKET ];
 	uint32_t n_id = htonl( device.id );
-	sprintf( buffer, "Sm" );
+
+  switch(sensorType) {
+    case STATUS_MOISTURE:
+      sprintf( buffer, "Sm" );
+      break;
+    case STATUS_HUMIDITY:
+      sprintf( buffer, "Su" );
+      break;
+    case STATUS_TEMPERATURE:
+      sprintf( buffer, "St" );
+      break;
+  }
+
 	memcpy( &buffer[2] , &n_id, sizeof( uint32_t ) );
 	buffer[ 2 + sizeof( uint32_t ) ] = '\0';
-
 	UDP_Server_SendMessage( device.address, sizeof( *device.address ), buffer );
 }

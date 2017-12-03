@@ -47,6 +47,6 @@ moisture_row_t* DeviceManager_GetMoistureAfterTime( device_t* device, long long 
 
 void DeviceManager_Shutdown( void );
 
-void DeviceManager_SaveMoistureData( device_t* device, uint32_t value );
+void DeviceManager_SaveSensorData( device_t* device, uint32_t value, char sensorType );
 
 #endif
