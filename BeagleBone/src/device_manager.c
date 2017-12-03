@@ -133,6 +133,16 @@ device_t* DeviceManager_Reregister( struct sockaddr_in* addr, uint32_t id )
 
 	DeviceArray_Put( device_arr, new_device );
 
+//     int len;
+//     moisture_row_t* vals = DeviceManager_GetMoistureAfterTime( new_device, time( NULL ) - 1000000, &len );
+//
+//     printf( INFO "Received rows from db\n" );
+//     for( int i = 0; i < len; i++ ) {
+//         printf( INFO "Moisture value: %d\n", vals[ i ].value );
+//     }
+//
+//     free( vals );
+
 	return new_device;
 }
 
@@ -206,4 +216,56 @@ void DeviceManager_SaveMoistureData( device_t* device, uint32_t value )
     else {
         printf( INFO "Values succesfully stored in db\n" );
     }
+}
+
+static int sql_read_moisture_callback( void* ret_args, int num_rows, char** rows, char** columns )
+{
+     moisture_callback_args_t* args = (moisture_callback_args_t*) ret_args;
+
+     moisture_row_t* row = malloc( sizeof( moisture_row_t ) );
+
+     row->id = atoi( rows[ 0 ] );
+     row->timestamp = atol( rows[ 1 ] );
+     row->value = atoi( rows[ 2 ] );
+
+     //printf( INFO "(id, time, value) : (%d, %lld, %d)\n", row->id, row->timestamp, row->value );
+
+     if( args->length >= args->max ) {
+          printf( ERROR "Too many rows returned\n" );
+          free( row );
+          return 1;
+     }
+     else {
+          args->rows[ args->length++ ] = *row;
+     }
+     return 0;
+}
+
+moisture_row_t* DeviceManager_GetMoistureAfterTime( device_t* device, long long timestamp, int* arr_len )
+{
+    char sql[ SQL_STATEMENT_BUFFER_SIZE ];
+
+    sprintf( sql, "SELECT * FROM moisture WHERE id = %u AND time > %lld;", device->id, timestamp );
+
+    char* err_msg = NULL;
+
+
+    moisture_callback_args_t args;
+    args.max = 1024;
+    args.length = 0;
+    args.rows = malloc( args.max * sizeof( moisture_row_t ) );
+
+    int ret = sqlite3_exec( db, sql, sql_read_moisture_callback, &args, &err_msg );
+    if( ret != SQLITE_OK ) {
+          fprintf( stderr, ERROR "Error reading from SQL: %s\n", err_msg );
+          sqlite3_free( err_msg );
+          return NULL;
+    }
+    else {
+        printf( INFO "%d values succesfully read from db\n", args.length );
+    }
+
+    *arr_len = args.length;
+    
+    return args.rows;
 }
