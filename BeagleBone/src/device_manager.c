@@ -1,6 +1,7 @@
 #include <include/device_manager.h>
 #include <include/device_array.h>
 #include <include/udp_server.h>
+#include <include/pid.h>
 #include <include/define.h>
 
 #include <stdlib.h>
@@ -10,10 +11,17 @@
 #include <include/sqlite3.h>
 
 #define DEVICE_MANAGER_DEFAULT_SIZE 64
-#define SQL_STATEMENT_BUFFER_SIZE 1024 
+#define SQL_STATEMENT_BUFFER_SIZE 1024
+
+#define STATUS_MOISTURE 'm'
+#define STATUS_HUMIDITY 'u'
+#define STATUS_TEMPERATURE 't'
 
 #define DB_NAME "plants.db"
 #define INSERT_MOISTURE "INSERT INTO moisture (id, time, value) VALUES ( %u, %llu, %u );"
+#define INSERT_HUMIDITY "INSERT INTO humidity (id, time, value) VALUES ( %u, %llu, %u );"
+#define INSERT_TEMPERATURE "INSERT INTO temperature (id, time, value) VALUES ( %u, %llu, %u );"
+#define SELECT_LAST_MOISTURE "SELECT * FROM moisture WHERE id=(SELECT MAX(TIME) FROM moisture);"
 
 static pthread_t poll_thread;
 
@@ -32,8 +40,11 @@ static void* poll_devices( void* args )
          device_t* devices = DeviceArray_GetAlive( device_arr, &num_devices );
 
          for( int i = 0; i < num_devices; i++ ) {
-             printf( DEVICE_STATUS "Requesting moisture data from device %u\n", devices[ i ].id );
-             UDP_Server_RequestMoisture( devices[ i ] );
+             printf( DEVICE_STATUS "Requesting sensor data from device %u\n", devices[ i ].id );
+             UDP_Server_RequestSensor( &devices[ i ], STATUS_MOISTURE );
+             UDP_Server_RequestSensor( &devices[ i ], STATUS_HUMIDITY );
+             UDP_Server_RequestSensor( &devices[ i ], STATUS_TEMPERATURE );
+             PID_Update(&devices[i]);
          }
 
          free( devices );
@@ -73,29 +84,40 @@ static void* watch_device( void* args )
 	return NULL;
 }
 
+static void DeviceManager_InitPID( void ) {
+  int num_devices = 0;
+  device_t* devices = DeviceArray_GetAlive( device_arr, &num_devices );
+
+  for( int i = 0; i < num_devices; i++ ) {
+    // Save initial values into database
+    PID_SavePIDdata(&devices[i], 0, 0);
+  }
+}
+
 int DeviceManager_Init( void )
 {
-    int ret = sqlite3_open( DB_NAME, &db );
+  int ret = sqlite3_open( DB_NAME, &db );
 
-    if( ret ) {
-      fprintf( stderr, ERROR "Can't open database: %s\n", sqlite3_errmsg( db ) );
-      return 0;
-    } 
+  if( ret ) {
+    fprintf( stderr, ERROR "Can't open database: %s\n", sqlite3_errmsg( db ) );
+    return 0;
+  }
 
-	should_watch = 1;
-	pthread_mutex_init( &lock, NULL );
-	device_arr = DeviceArray_Init( DEVICE_MANAGER_DEFAULT_SIZE );
-	srand( time( NULL ) );
+  should_watch = 1;
+  pthread_mutex_init( &lock, NULL );
+  device_arr = DeviceArray_Init( DEVICE_MANAGER_DEFAULT_SIZE );
+  srand( time( NULL ) );
 
-	heart_beat_time.tv_sec = 5;
-	heart_beat_time.tv_nsec = 0;
+  heart_beat_time.tv_sec = 5;
+  heart_beat_time.tv_nsec = 0;
 
-     poll_time.tv_sec = 5;
+  poll_time.tv_sec = 5;
 	poll_time.tv_nsec = 0;
 
-     pthread_create( &poll_thread, NULL, poll_devices, NULL );
+  DeviceManager_InitPID();
+  pthread_create( &poll_thread, NULL, poll_devices, NULL );
 
-     return 1;
+  return 1;
 }
 
 device_t* DeviceManager_Register( struct sockaddr_in* addr )
@@ -196,17 +218,26 @@ void DeviceManager_Shutdown()
      sqlite3_close( db );
 }
 
-void DeviceManager_SaveMoistureData( device_t* device, uint32_t value )
+void DeviceManager_SaveSensorData( device_t* device, uint32_t value, char sensorType )
 {
      long long curr_time = ( long long )time( NULL );
-
      uint32_t id = device->id;
+     char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
 
-     printf( INFO "Saving moisture data from id: %u, value: %u\n", id, value );
-
-    char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
-
-    sprintf( sql_statement, INSERT_MOISTURE, id, curr_time, value );
+     switch(sensorType) {
+       case STATUS_MOISTURE:
+          printf( INFO "Saving moisture data from id: %u, value: %u\n", id, value );
+          sprintf( sql_statement, INSERT_MOISTURE, id, curr_time, value );
+          break;
+       case STATUS_HUMIDITY:
+          printf( INFO "Saving humidity data from id: %u, value: %u\n", id, value );
+          sprintf( sql_statement, INSERT_HUMIDITY, id, curr_time, value );
+          break;
+       case STATUS_TEMPERATURE:
+          printf( INFO "Saving temperature data from id: %u, value: %u\n", id, value );
+          sprintf( sql_statement, INSERT_TEMPERATURE, id, curr_time, value );
+          break;
+     }
 
     char* err_msg = NULL;
 
@@ -243,6 +274,31 @@ static int sql_read_moisture_callback( void* ret_args, int num_rows, char** rows
      return 0;
 }
 
+moisture_row_t* DeviceManager_GetLastMoisture(device_t* device)
+{
+  char sql[ SQL_STATEMENT_BUFFER_SIZE ];
+  sprintf( sql, SELECT_LAST_MOISTURE );
+  char* err_msg = NULL;
+
+  moisture_callback_args_t args;
+  args.max = 1;
+  args.length = 0;
+  args.rows = malloc( args.max * sizeof( moisture_row_t ) );
+
+  int ret = sqlite3_exec( db, sql, sql_read_moisture_callback, &args, &err_msg );
+  if( ret != SQLITE_OK )
+  {
+        fprintf( stderr, ERROR "Error reading from moisture table: %s\n", err_msg );
+        sqlite3_free( err_msg );
+        return NULL;
+  }
+  else {
+      printf( INFO "Last moisture was succesfully read from db\n" );
+  }
+
+  return args.rows;
+}
+
 moisture_row_t* DeviceManager_GetMoistureAfterTime( device_t* device, long long timestamp, int* arr_len )
 {
     char sql[ SQL_STATEMENT_BUFFER_SIZE ];
@@ -268,7 +324,7 @@ moisture_row_t* DeviceManager_GetMoistureAfterTime( device_t* device, long long 
     }
 
     *arr_len = args.length;
-    
+
     return args.rows;
 }
 
@@ -279,4 +335,3 @@ void DeviceManager_ActivatePump( device_t* device, uint32_t duration )
 
      UDP_Server_RequestPump( device->address, sizeof( *device->address ), duration );
 }
-
