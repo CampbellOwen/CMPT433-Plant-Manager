@@ -1,4 +1,6 @@
 #include <include/seg_display.h>
+#include <include/device_manager.h>
+
 #include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
@@ -17,6 +19,10 @@ static seg_char_t right_char;
 static int should_run = 0;
 static struct timespec delay_time = { 0, 5000000 };
 // static struct timespec delay_time = { 1, 0 };
+static int cap_devices = 10;
+static int num_devices = 0;
+static int devices_index = 0;
+static moisture_row_t* moisture_devices;
 
 // Access using enum in header
 static seg_char_t chars[ 10 ] = {
@@ -44,23 +50,23 @@ static void* SegDisplay_Thread( void* args )
             left_bak = left_char;
             right_bak = right_char;
         }
-        pthread_mutex_unlock( &lock ); 
+        pthread_mutex_unlock( &lock );
 
-        GPIO_WritePin( &( display->left_pin ), 0 );            
+        GPIO_WritePin( &( display->left_pin ), 0 );
         GPIO_WritePin( &( display->right_pin ), 0 );
-        
+
         I2C_WriteRegister( &( display->i2c ), SEG_UPPER, left_bak.top );
         I2C_WriteRegister( &( display->i2c ), SEG_LOWER, left_bak.bottom );
         GPIO_WritePin( &( display->left_pin ), left_bak.on );
 
         nanosleep( &delay_time, ( struct timespec* ) NULL );
-        GPIO_WritePin( &( display->left_pin ), 0 );            
-        
+        GPIO_WritePin( &( display->left_pin ), 0 );
+
         I2C_WriteRegister( &( display->i2c ), SEG_UPPER, right_bak.top );
         I2C_WriteRegister( &( display->i2c ), SEG_LOWER, right_bak.bottom );
         GPIO_WritePin( &( display->right_pin ), right_bak.on );
-        
-        nanosleep( &delay_time, ( struct timespec* ) NULL );  
+
+        nanosleep( &delay_time, ( struct timespec* ) NULL );
         GPIO_WritePin( &( display->right_pin ), 0 );
     }
 
@@ -77,7 +83,6 @@ int SegDisplay_Init( seg_display_t* display )
 
     GPIO_WritePin( &( display->left_pin ), 0 );
     GPIO_WritePin( &( display->right_pin ), 0 );
-    
 
     display->i2c.bus = SEG_BUS;
 
@@ -91,6 +96,7 @@ int SegDisplay_Init( seg_display_t* display )
     pthread_mutex_init( &lock, NULL );
 
     should_run = 1;
+    moisture_devices = malloc(cap_devices * sizeof(int));
     pthread_create( &tid, NULL, &SegDisplay_Thread, ( void* )( display ) );
 
     return 1;
@@ -130,11 +136,11 @@ static enum seg_chars SegDisplay_CharToEnum( char c )
             return NINE;
             break;
         default:
-            return ZERO;  
+            return ZERO;
     }
 }
 
-void SegDisplay_SetInt( seg_display_t* display, int val )
+void SegDisplay_SetInt( int val )
 {
     if( val > 99 ) val = 99;
     if( val < 0 ) val = 0;
@@ -142,10 +148,10 @@ void SegDisplay_SetInt( seg_display_t* display, int val )
     int right = val % 10;
     char vals[2] = { left + '0', right + '0' };
 
-    SegDisplay_SetChars( display, vals );
+    SegDisplay_SetChars( vals );
 }
 
-void SegDisplay_SetChars( seg_display_t* display, char vals[2] )
+void SegDisplay_SetChars( char vals[2] )
 {
     pthread_mutex_lock( &lock );
     {
@@ -153,16 +159,42 @@ void SegDisplay_SetChars( seg_display_t* display, char vals[2] )
             left_char.on = 0;
             return;
         }
-    
+
         if( vals[ 1 ] == '\0' ) {
             right_char.on = 0;
             return;
         }
-    
+
         left_char = chars[ SegDisplay_CharToEnum( vals[ 0 ] ) ];
-        right_char = chars[ SegDisplay_CharToEnum( vals[ 1 ] ) ];   
+        right_char = chars[ SegDisplay_CharToEnum( vals[ 1 ] ) ];
     }
     pthread_mutex_unlock( &lock );
+}
+
+void SegDisplay_SetDevice(int index) {
+  if (index >= num_devices) {
+    return;
+  }
+  SegDisplay_SetInt(index);
+}
+
+void SegDisplay_NextDevice() {
+  devices_index++;
+
+  if (devices_index >= num_devices) {
+    devices_index = 0;
+  }
+
+  SegDisplay_SetDevice(devices_index);
+}
+
+void SegDisplay_Update(int index, moisture_row_t* moisture) {
+  if (index > cap_devices) {
+    cap_devices = 2 * cap_devices;
+    moisture_devices = realloc(moisture_devices, cap_devices*sizeof(moisture_row_t));
+  }
+
+  moisture_devices[index] = *moisture;
 }
 
 void SegDisplay_Cleanup( seg_display_t* display )

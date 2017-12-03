@@ -3,6 +3,7 @@
 #include <include/udp_server.h>
 #include <include/pid.h>
 #include <include/define.h>
+#include <include/seg_display.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,7 +22,7 @@
 #define INSERT_MOISTURE "INSERT INTO moisture (id, time, value) VALUES ( %u, %llu, %u );"
 #define INSERT_HUMIDITY "INSERT INTO humidity (id, time, value) VALUES ( %u, %llu, %u );"
 #define INSERT_TEMPERATURE "INSERT INTO temperature (id, time, value) VALUES ( %u, %llu, %u );"
-#define SELECT_LAST_MOISTURE "SELECT * FROM moisture WHERE id=(SELECT MAX(TIME) FROM moisture);"
+#define SELECT_LAST_MOISTURE "SELECT * FROM moisture WHERE id=(SELECT MAX(TIME) FROM moisture WHERE id=%u);"
 
 static pthread_t poll_thread;
 
@@ -45,7 +46,8 @@ static void* poll_devices( void* args )
              UDP_Server_RequestSensor( &devices[ i ], STATUS_HUMIDITY );
              UDP_Server_RequestSensor( &devices[ i ], STATUS_TEMPERATURE );
              PID_Update(&devices[i]);
-         }
+             SegDisplay_Update(i, DeviceManager_GetLastMoisture(&devices[i]));
+           }
 
          free( devices );
 
@@ -277,7 +279,7 @@ static int sql_read_moisture_callback( void* ret_args, int num_rows, char** rows
 moisture_row_t* DeviceManager_GetLastMoisture(device_t* device)
 {
   char sql[ SQL_STATEMENT_BUFFER_SIZE ];
-  sprintf( sql, SELECT_LAST_MOISTURE );
+  sprintf( sql, SELECT_LAST_MOISTURE, device->id );
   char* err_msg = NULL;
 
   moisture_callback_args_t args;
