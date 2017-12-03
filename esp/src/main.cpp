@@ -29,6 +29,8 @@
 #define ACTION_ACTIVATE 'a'
 #define ACTION_PUMP 'p'
 
+#define PUMP_PIN D4
+
 IPAddress hostip( 192, 168, 86, 45 );
 
 WiFiUDP udp;
@@ -62,6 +64,13 @@ uint32_t try_read_id()
         EEPROM.end();
         return 0;
     }
+}
+
+void activate_pump( int time_duration )
+{
+    digitalWrite( PUMP_PIN, HIGH );
+    delay( time_duration );
+    digitalWrite( PUMP_PIN, LOW );
 }
 
 void save_id( uint32_t id )
@@ -112,6 +121,8 @@ void setup()
     Serial.println( "Sending init packet to host" );
 
     id = try_read_id();
+
+    pinMode( PUMP_PIN, OUTPUT );
 
     if( !have_id ) {
         char message[] = { 'C', 'r' };
