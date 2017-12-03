@@ -282,10 +282,10 @@ void UDP_Server_Wait( void )
     close( serverfd );
 }
 
-void UDP_Server_RequestSensor( device_t device, char sensorType )
+void UDP_Server_RequestSensor( device_t* device, char sensorType )
 {
 	char buffer[ UDP_SERVER_MAX_PACKET ];
-	uint32_t n_id = htonl( device.id );
+	uint32_t n_id = htonl( device->id );
 
   switch(sensorType) {
     case STATUS_MOISTURE:
@@ -302,7 +302,7 @@ void UDP_Server_RequestSensor( device_t device, char sensorType )
 	memcpy( &buffer[2] , &n_id, sizeof( uint32_t ) );
 	buffer[ 2 + sizeof( uint32_t ) ] = '\0';
 
-	UDP_Server_SendMessage( device.address, sizeof( *device.address ), buffer, 6 );
+	UDP_Server_SendMessage( device->address, sizeof( *device->address ), buffer, 6 );
 }
 
 void UDP_Server_RequestPump( struct sockaddr_in* clientAddr, unsigned int client_len, uint32_t duration  )
