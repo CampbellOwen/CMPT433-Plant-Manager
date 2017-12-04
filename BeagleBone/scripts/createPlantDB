@@ -1,0 +1,11 @@
+#!/bin/bash
+# Creates a SQLite database in ${HOME}/plants.db
+# This script must run on the BeagleBone Green and be executable
+# init.sql must also be in current directory
+OUTDIR="$HOME"
+DB_NAME="plants.db"
+
+echo $OUTDIR/$DB_NAME
+
+rm -f $OUTDIR/$DB_NAME
+cat init.sql | sqlite3 $OUTDIR/$DB_NAME
