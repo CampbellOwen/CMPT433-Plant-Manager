@@ -1,7 +1,7 @@
 <template>
   <div class="device">
-      <h1>{{ id }}</h1>
-      <h4>{{ status }}</h4>
+      <h1>Plant ID: {{ id }}</h1>
+      <h4 style="color:#000000;" v-bind:style="{ 'color': status_colour }">{{ status }}</h4>
       <div id="#vals" >
           <div class="val">Current moisture level: {{ moisture }}</div>
           <div class="val">Current humidity level: {{ humidity }}</div>
@@ -13,7 +13,17 @@
 <script>
 export default {
   name: 'Device',
-  props: [ 'id', 'status', 'moisture', 'humidity', 'temperature' ]
+    props: [ 'id', 'status', 'moisture', 'humidity', 'temperature' ],
+    data() {
+        return {
+        }
+    },
+    computed: {
+        status_colour: function () {
+            return this.status == "Online" ? "#2e7d32" : "#d84315"
+        }
+
+    }
 }
 </script>
 

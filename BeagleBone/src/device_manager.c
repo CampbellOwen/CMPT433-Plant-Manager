@@ -23,6 +23,9 @@
 #define INSERT_TEMPERATURE "INSERT INTO temperature (id, time, value) VALUES ( %u, %llu, %u );"
 #define SELECT_LAST_MOISTURE "SELECT * FROM moisture WHERE id=(SELECT MAX(TIME) FROM moisture);"
 
+#define UPDATE_STATUS "UPDATE devices SET status='%s' WHERE id=%u;"
+#define INSERT_DEVICE "INSERT OR IGNORE INTO devices(id, status) VALUES(%d, '%s');"
+
 static pthread_t poll_thread;
 
 static device_array_t* device_arr;
@@ -55,6 +58,24 @@ static void* poll_devices( void* args )
     return NULL;
 }
 
+static void save_device_status( device_t* device, char* status )
+{
+    char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
+
+    sprintf( sql_statement, UPDATE_STATUS, status, device->id );
+
+    char* err_msg = NULL;
+
+    int ret = sqlite3_exec( db, sql_statement, NULL, NULL, &err_msg );
+    if( ret != SQLITE_OK ) {
+          fprintf( stderr, ERROR "Error updating device status in SQL: %s\n", err_msg );
+          sqlite3_free( err_msg );
+    }
+    else {
+        printf( INFO "Values succesfully updated in db\n" );
+    }
+}
+
 static void* watch_device( void* args )
 {
 	device_t* device = (device_t*)args;
@@ -71,9 +92,11 @@ static void* watch_device( void* args )
 			{
 				printf( DEVICE_STATUS "Device %d timeout\n", device->id );
 				device->state = TIMEOUT;
+                    save_device_status( device, "Offline" );
 			}
                else {
                    printf( DEVICE_STATUS "Device %d okay\n", device->id );
+                    save_device_status( device, "Online" );
                }
 		}
 		pthread_mutex_unlock( &lock );
@@ -133,7 +156,23 @@ device_t* DeviceManager_Register( struct sockaddr_in* addr )
 
 	printf( DEVICE_STATUS "Registering device to id %d\n", id );
 
+    char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
+
+    sprintf( sql_statement, INSERT_DEVICE, new_device->id, "Online" );
+
+    char* err_msg = NULL;
+
+    int ret = sqlite3_exec( db, sql_statement, NULL, NULL, &err_msg );
+    if( ret != SQLITE_OK ) {
+          fprintf( stderr, ERROR "Error inserting device in SQL: %s\n", err_msg );
+          sqlite3_free( err_msg );
+    }
+    else {
+        printf( INFO "Device succesfully inserted in db\n" );
+    }
+
 	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
+
 
 	DeviceArray_Put( device_arr, new_device );
 
@@ -151,6 +190,22 @@ device_t* DeviceManager_Reregister( struct sockaddr_in* addr, uint32_t id )
 	printf( DEVICE_STATUS "Re-registering old device - id: %d\n", id );
 
      printf( DEBUG "Port: %d\n", ntohs( new_device->address->sin_port ) );
+
+    char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
+    sprintf( sql_statement, INSERT_DEVICE, new_device->id, "Online" );
+
+    printf( INFO "SQL STATEMENT: %s\n", sql_statement );
+
+    char* err_msg = NULL;
+
+    int ret = sqlite3_exec( db, sql_statement, NULL, NULL, &err_msg );
+    if( ret != SQLITE_OK ) {
+          fprintf( stderr, ERROR "Error inserting device in SQL: %s\n", err_msg );
+          sqlite3_free( err_msg );
+    }
+    else {
+        printf( INFO "Device succesfully inserted in db\n" );
+    }
 
 	pthread_create( &new_device->watch_thread, NULL, &watch_device, (void*)new_device );
 

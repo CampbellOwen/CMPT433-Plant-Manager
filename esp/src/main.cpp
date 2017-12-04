@@ -33,7 +33,7 @@
 
 #define PUMP_PIN D0
 
-IPAddress hostip( 192, 168, 1, 104 );
+IPAddress hostip( 192, 168, 1, 146 );
 
 WiFiUDP udp;
 char buffer[ BUFFER_SIZE ];

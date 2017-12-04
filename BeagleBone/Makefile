@@ -10,7 +10,8 @@ SRC = $(wildcard src/*.c)
 OBJECTS=$(patsubst %.c, %.o, $(SRC))
 OUTDIR = bin
 OUT_NAME = plantManager
-TARGET_DIR = $(HOME)/cmpt433/public/myApps
+APPS_DIR = $(HOME)/cmpt433/public/myApps
+TARGET_DIR = $(APPS_DIR)/plantManager
 TARGET_NAME=$(OUT_NAME)
 DB_NAME = plants.db
 
@@ -28,12 +29,19 @@ $(OBJECTS): src/%.o : src/%.c
 	$(CC) $(INCLUDE) -c $< -o $@ $(CFLAGS) $(LFLAGS)
 
 build:
+	@mkdir -p $(TARGET_DIR)
 	@mkdir -p $(OUTDIR)
 
 clean:
 	rm -rf $(OUTDIR)
 	rm -f $(OBJECTS)
 	rm -f $(TARGET_DIR)/$(TARGET_NAME)
+
+website: build
+	cd ../website/plantmanager; npm run build
+	cp -r ../website/dist $(TARGET_DIR)/
+	cp -r ../website/backend $(TARGET_DIR)/
+	cp -r ../website/run.py $(TARGET_DIR)/
 
 init_db:
 	cp sql/init.sql ${TARGET_DIR}/init.sql

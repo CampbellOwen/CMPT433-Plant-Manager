@@ -49,7 +49,7 @@ export default {
       },
 
       getDevicesFromBackend() {
-          const path = 'http://localhost:5000/api/devices';
+          const path = 'http://192.168.1.146:5000/api/devices';
           return axios.get( path )
       }
   },
