@@ -36,7 +36,7 @@ body {
 
 }
 #header {
-    font-family: 'Quicksand';
+    font-family: 'Quicksand', 'Avenir', Helvetica;
     color:#E1E2E1;
 
 }

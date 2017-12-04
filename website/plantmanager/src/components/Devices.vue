@@ -1,7 +1,8 @@
 <template>
   <div class="devices">
     <div class="device-grid" >
-        <device v-for="(device, id) in devices" :id="id" :status="device.status"></device>
+        <device v-for="(device, id) in devices" :id="id" :status="device.status" :temperature="device.temperature" :moisture="device.moisture" :humidity="device.humidity"></device>
+
     </div>
   </div>
 </template>
