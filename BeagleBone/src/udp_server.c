@@ -21,6 +21,8 @@
 #define UDP_SERVER_BUFFER_LENGTH 1024
 #define UDP_SERVER_MAX_PACKET 1500
 
+#define UDP_DEVICE_INFO_LENGTH 10000
+
 #define CATEGORY_CONFIG 'C'
 #define CATEGORY_STATUS 'S'
 #define CATEGORY_ACTION 'A'
@@ -29,6 +31,7 @@
 
 #define STATUS_HEARTBEAT 'h'
 #define STATUS_MOISTURE 'm'
+#define STATUS_DEVICES 'd'
 #define STATUS_HUMIDITY 'u'
 #define STATUS_TEMPERATURE 't'
 
@@ -43,6 +46,7 @@ static GPIO_Pin_t pump_pin;
 
 static uint32_t get_uint32_t( char* buffer, int index )
 {
+
      uint32_t id = 0;
      id =    buffer[index+3] << 24 |
              buffer[index+2] << 16 |
@@ -125,19 +129,7 @@ static void HandleHeartbeat( struct sockaddr_in* clientAddr, unsigned int client
 
 static void HandlePump( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
 {
-   if( client_len < 6 ) return;
-    uint32_t val = get_uint32_t( buffer, 2 );
-    printf( INFO "Turning pump on for %u milliseconds\n", val );
-
-    GPIO_WritePin( &pump_pin, 1 );
-
-    struct timespec delay = { val / 1000, ( val % 1000 ) * 1000000 };
-    printf(INFO "Sleeping for %lu s, %lu ns\n", delay.tv_sec, delay.tv_nsec );
-
-    nanosleep( &delay, NULL );
-    printf(INFO "Done sleeping");
-
-    GPIO_WritePin( &pump_pin, 0 );
+    UDP_Server_SendMessage( clientAddr, client_len, buffer, 2 );
 }
 
 static void HandleSensor( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer, char sensorType )
@@ -170,6 +162,16 @@ static void HandleActivate( struct sockaddr_in* clientAddr, unsigned int client_
 	// TODO nothing to activate yet
 }
 
+static void HandleDevicesStatus( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer )
+{
+     char response[ UDP_DEVICE_INFO_LENGTH ];    
+
+     int len;
+     device_t* devices = DeviceManager_GetAll( &len );
+     (void)devices;
+     (void)response;
+}
+
 static void UDP_Server_HandleMessage( struct sockaddr_in* clientAddr, unsigned int client_len, char* buffer, int len )
 {
     buffer[ len ] = '\0';
@@ -193,15 +195,17 @@ static void UDP_Server_HandleMessage( struct sockaddr_in* clientAddr, unsigned i
 					break;
 				case STATUS_MOISTURE:
 					HandleSensor( clientAddr, client_len, buffer, STATUS_MOISTURE );
-          break;
-        case STATUS_HUMIDITY:
-          HandleSensor( clientAddr, client_len, buffer, STATUS_HUMIDITY );
-          break;
-        case STATUS_TEMPERATURE:
-          HandleSensor( clientAddr, client_len, buffer, STATUS_TEMPERATURE );
-          break;
-      }
-
+                          break;
+                        case STATUS_HUMIDITY:
+                          HandleSensor( clientAddr, client_len, buffer, STATUS_HUMIDITY );
+                          break;
+                        case STATUS_TEMPERATURE:
+                          HandleSensor( clientAddr, client_len, buffer, STATUS_TEMPERATURE );
+                          break;
+                        case STATUS_DEVICES:
+                          HandleDevicesStatus( clientAddr, client_len, buffer );
+                          break;
+                      }
 			break;
 		case CATEGORY_ACTION:
 			switch( buffer[ 1 ] ) {

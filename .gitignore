@@ -3,3 +3,5 @@ BeagleBone/bin/*
 *.o
 *.db
 *.swo
+website/dist/*
+website/__pycache__/*

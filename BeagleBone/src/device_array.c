@@ -159,3 +159,22 @@ device_t* DeviceArray_GetAlive( device_array_t* arr, int* len_out )
 
 	return alive_devices;
 }
+
+device_t* DeviceArray_GetAll( device_array_t* arr, int* len_out )
+{
+	device_t* alive_devices = NULL;
+	*len_out = 0;
+	pthread_mutex_lock( &arr->arr_lock );
+	{
+		alive_devices = malloc( sizeof( device_t ) * arr->len );
+		if( alive_devices != NULL ) {
+			for( int i = 0; i < arr->len; i++ ) {
+                     alive_devices[ *len_out ] = *arr->data[ i ];
+                     ( *len_out )++;
+			}
+		}
+	}
+	pthread_mutex_unlock( &arr->arr_lock );
+
+	return alive_devices;
+}
