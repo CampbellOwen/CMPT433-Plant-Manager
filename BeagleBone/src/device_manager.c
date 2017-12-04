@@ -21,7 +21,7 @@
 #define INSERT_MOISTURE "INSERT INTO moisture (id, time, value) VALUES ( %u, %llu, %u );"
 #define INSERT_HUMIDITY "INSERT INTO humidity (id, time, value) VALUES ( %u, %llu, %u );"
 #define INSERT_TEMPERATURE "INSERT INTO temperature (id, time, value) VALUES ( %u, %llu, %u );"
-#define SELECT_LAST_MOISTURE "SELECT * FROM moisture WHERE id=(SELECT MAX(TIME) FROM moisture);"
+#define SELECT_LAST_MOISTURE "SELECT * FROM moisture WHERE TIME=(SELECT MAX(TIME) FROM moisture WHERE id=%u);"
 
 static pthread_t poll_thread;
 
@@ -221,35 +221,39 @@ void DeviceManager_Shutdown()
 
 void DeviceManager_SaveSensorData( device_t* device, uint32_t value, char sensorType )
 {
-     long long curr_time = ( long long )time( NULL );
-     uint32_t id = device->id;
-     char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
+  if (value >= 1000000) {
+    return;
+  }
 
-     switch(sensorType) {
-       case STATUS_MOISTURE:
-          printf( INFO "Saving moisture data from id: %u, value: %u\n", id, value );
-          sprintf( sql_statement, INSERT_MOISTURE, id, curr_time, value );
-          break;
-       case STATUS_HUMIDITY:
-          printf( INFO "Saving humidity data from id: %u, value: %u\n", id, value );
-          sprintf( sql_statement, INSERT_HUMIDITY, id, curr_time, value );
-          break;
-       case STATUS_TEMPERATURE:
-          printf( INFO "Saving temperature data from id: %u, value: %u\n", id, value );
-          sprintf( sql_statement, INSERT_TEMPERATURE, id, curr_time, value );
-          break;
-     }
+  long long curr_time = ( long long )time( NULL );
+  uint32_t id = device->id;
+  char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
 
-    char* err_msg = NULL;
+  switch(sensorType) {
+   case STATUS_MOISTURE:
+      printf( INFO "Saving moisture data from id: %u, value: %u\n", id, value );
+      sprintf( sql_statement, INSERT_MOISTURE, id, curr_time, value );
+      break;
+   case STATUS_HUMIDITY:
+      printf( INFO "Saving humidity data from id: %u, value: %u\n", id, value );
+      sprintf( sql_statement, INSERT_HUMIDITY, id, curr_time, value );
+      break;
+   case STATUS_TEMPERATURE:
+      printf( INFO "Saving temperature data from id: %u, value: %u\n", id, value );
+      sprintf( sql_statement, INSERT_TEMPERATURE, id, curr_time, value );
+      break;
+  }
 
-    int ret = sqlite3_exec( db, sql_statement, NULL, NULL, &err_msg );
-    if( ret != SQLITE_OK ) {
-          fprintf( stderr, ERROR "Error writing to SQL: %s\n", err_msg );
-          sqlite3_free( err_msg );
-    }
-    else {
-        printf( INFO "Values succesfully stored in db\n" );
-    }
+  char* err_msg = NULL;
+
+  int ret = sqlite3_exec( db, sql_statement, NULL, NULL, &err_msg );
+  if( ret != SQLITE_OK ) {
+      fprintf( stderr, ERROR "Error writing to SQL: %s\n", err_msg );
+      sqlite3_free( err_msg );
+  }
+  else {
+    printf( INFO "Values succesfully stored in db\n" );
+  }
 }
 
 static int sql_read_moisture_callback( void* ret_args, int num_rows, char** rows, char** columns )
@@ -278,7 +282,7 @@ static int sql_read_moisture_callback( void* ret_args, int num_rows, char** rows
 moisture_row_t* DeviceManager_GetLastMoisture(device_t* device)
 {
   char sql[ SQL_STATEMENT_BUFFER_SIZE ];
-  sprintf( sql, SELECT_LAST_MOISTURE );
+  sprintf( sql, SELECT_LAST_MOISTURE, device->id );
   char* err_msg = NULL;
 
   moisture_callback_args_t args;
