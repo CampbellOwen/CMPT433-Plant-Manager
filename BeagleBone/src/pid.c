@@ -31,10 +31,10 @@
 #define INTEGRATOR_GAIN 0.01
 #define MOISTURE_GOAL 30
 
-#define DB_NAME "plants.db"
+#define DB_NAME "/root/plants.db"
 #define SQL_STATEMENT_BUFFER_SIZE 1024
 #define SELECT_LAST_PID "SELECT * FROM pid WHERE id=(SELECT MAX(TIME) FROM pid);"
-#define INSERT_PID "INSERT INTO pid (id, time, derivativeState, integratorState) VALUES ( %u, %llu, %f, %f );"
+#define INSERT_PID "INSERT INTO pid (id, time, derivativeState, integratorState, pumpDuration) VALUES ( %u, %llu, %f, %f, %d );"
 
 #define CATEGORY_ACTION 'A'
 #define ACTION_PUMP 'p'
@@ -90,14 +90,14 @@ static pid_row_t* PID_GetLastPID()
   return args.rows;
 }
 
-void PID_SavePIDdata( device_t* device, float derivativeState, float integratorState)
+void PID_SavePIDdata( device_t* device, float derivativeState, float integratorState, int pumpDuration)
 {
      long long curr_time = ( long long )time( NULL );
      uint32_t id = device->id;
      char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
 
-     printf( INFO "Saving PID data from id: %u, derivativeState: %f, integratorState: %f\n", id, derivativeState, integratorState );
-     sprintf( sql_statement, INSERT_PID, id, curr_time, derivativeState, integratorState );
+     printf( INFO "Saving PID data from id: %u, derivativeState: %f, integratorState: %f, pumpDuration: %d\n", id, derivativeState, integratorState, pumpDuration );
+     sprintf( sql_statement, INSERT_PID, id, curr_time, derivativeState, integratorState, pumpDuration );
 
     char* err_msg = NULL;
 
@@ -134,7 +134,7 @@ void PID_Update(device_t* device)
     integratorState = lastPID->integratorState + error;
   }
   else {
-    integratorState = error;
+    return;
   }
 
   // Limit the integrator state if necessary
@@ -154,8 +154,11 @@ void PID_Update(device_t* device)
   dTerm = DERIVATIVE_GAIN * (lastPID->derivativeState - lastMoisture->value);
   float derivativeState = lastMoisture->value;
 
-  PID_SavePIDdata(device, derivativeState, integratorState);
-  DeviceManager_ActivatePump(device, round(pTerm + dTerm + iTerm));
+  int pumpDuration = round(pTerm + dTerm + iTerm);
+  if (pumpDuration > 0) {
+    PID_SavePIDdata(device, derivativeState, integratorState, pumpDuration);
+    DeviceManager_ActivatePump(device, pumpDuration);
+  }
 }
 
 _Bool PID_Init(void)

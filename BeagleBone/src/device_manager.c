@@ -17,7 +17,7 @@
 #define STATUS_HUMIDITY 'u'
 #define STATUS_TEMPERATURE 't'
 
-#define DB_NAME "plants.db"
+#define DB_NAME "/root/plants.db"
 #define INSERT_MOISTURE "INSERT INTO moisture (id, time, value) VALUES ( %u, %llu, %u );"
 #define INSERT_HUMIDITY "INSERT INTO humidity (id, time, value) VALUES ( %u, %llu, %u );"
 #define INSERT_TEMPERATURE "INSERT INTO temperature (id, time, value) VALUES ( %u, %llu, %u );"
@@ -90,7 +90,8 @@ static void DeviceManager_InitPID( void ) {
 
   for( int i = 0; i < num_devices; i++ ) {
     // Save initial values into database
-    PID_SavePIDdata(&devices[i], 0, 0);
+    printf("Device: %d's initial values\n", i);
+    PID_SavePIDdata(&devices[i], 0, 0, 0);
   }
 }
 
@@ -330,8 +331,10 @@ moisture_row_t* DeviceManager_GetMoistureAfterTime( device_t* device, long long 
 
 void DeviceManager_ActivatePump( device_t* device, uint32_t duration )
 {
-     uint32_t id = device->id;
-     printf( INFO "Activating %u's pump for %u milliseconds\n", id, duration );
+    if (duration > 0) {
+      uint32_t id = device->id;
+      printf( INFO "Activating %u's pump for %u milliseconds\n", id, duration );
 
-     UDP_Server_RequestPump( device->address, sizeof( *device->address ), duration );
+      UDP_Server_RequestPump( device->address, sizeof( *device->address ), duration );
+    }
 }

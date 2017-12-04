@@ -36,6 +36,6 @@ clean:
 	rm -f $(TARGET_DIR)/$(TARGET_NAME)
 
 init_db:
-	rm -f $(OUTDIR)/$(DB_NAME)
-	cat sql/init.sql | sqlite3 $(OUTDIR)/$(DB_NAME)
-	cp $(OUTDIR)/$(DB_NAME) $(TARGET_DIR)/$(DB_NAME)
+	cp sql/init.sql ${TARGET_DIR}/init.sql
+	cp scripts/createPlantDB ${TARGET_DIR}/createPlantDB
+	chmod a+rwx ${TARGET_DIR}/createPlantDB
