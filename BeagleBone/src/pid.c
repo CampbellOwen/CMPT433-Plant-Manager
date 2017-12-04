@@ -129,11 +129,14 @@ void PID_Update(device_t* device)
     return;
   }
 
+  float integratorState;
   // Calculate the integral state with appropriate limiting
   if (isnan(lastPID->integratorState)) {
-    return;
+    integratorState = 0;
   }
-  float integratorState = lastPID->integratorState + error;
+  else {
+    integratorState = lastPID->integratorState + error;
+  }
 
   // Limit the integrator state if necessary
   if (integratorState > INTEGRATOR_MAX)
@@ -153,9 +156,9 @@ void PID_Update(device_t* device)
   float derivativeState = lastMoisture->value;
 
   int pumpDuration = round(pTerm + dTerm + iTerm);
+  PID_SavePIDdata(device, derivativeState, integratorState, pumpDuration);
   printf("Last moisture: %d; Error: %f; MOISTURE_GOAL: %f; pTerm: %f; dTerm: %f; iTerm: %f\n", lastMoisture->value, error, MOISTURE_GOAL, pTerm, dTerm, iTerm);
   if (pumpDuration > 0) {
-    PID_SavePIDdata(device, derivativeState, integratorState, pumpDuration);
     DeviceManager_ActivatePump(device, pumpDuration);
   }
 }
