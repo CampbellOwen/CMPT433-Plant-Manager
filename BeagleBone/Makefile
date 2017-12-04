@@ -39,6 +39,7 @@ clean:
 
 website: build
 	cd ../website/plantmanager; npm run build
+	cp -r scripts/start_flask.sh $(TARGET_DIR)/
 	cp -r ../website/dist $(TARGET_DIR)/
 	cp -r ../website/backend $(TARGET_DIR)/
 	cp -r ../website/run.py $(TARGET_DIR)/
