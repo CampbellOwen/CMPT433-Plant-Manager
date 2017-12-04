@@ -23,7 +23,7 @@ typedef struct {
   int max;
 } pid_callback_args_t;
 
-void PID_SavePIDdata( device_t* device, float derivativeState, float integratorState);
+void PID_SavePIDdata( device_t* device, float derivativeState, float integratorState, int pumpDuration);
 void PID_Update(device_t* device);
 _Bool PID_Init(void);
 void PID_Shutdown(void);

@@ -33,7 +33,7 @@
 
 #define PUMP_PIN D0
 
-IPAddress hostip( 192, 168, 0, 18 );
+IPAddress hostip( 192, 168, 1, 104 );
 
 WiFiUDP udp;
 char buffer[ BUFFER_SIZE ];
@@ -178,7 +178,7 @@ void handle_pump( char* buffer, int len )
      activate_pump( time_val );
 }
 
-void handle_sensor( char* buffer, int len )
+void handle_sensor( char* buffer, int len, char sensorType )
 {
     char message[16];
     int value;
