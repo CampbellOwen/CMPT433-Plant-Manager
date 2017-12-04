@@ -20,8 +20,8 @@
 #include <unistd.h>
 #include <string.h>
 
-#define INTEGRATOR_MAX 40
-#define INTEGRATOR_MIN 20
+#define INTEGRATOR_MAX 40.0
+#define INTEGRATOR_MIN 25.0
 
 #define PROPORTIONAL_GAIN 10
 #define DERIVATIVE_GAIN 1000
@@ -29,11 +29,13 @@
 // A good starting value for the integrator gain is:
 // Smaller than the proportional gain by the same ratio as proportional gain to derivative gain
 #define INTEGRATOR_GAIN 0.01
-#define MOISTURE_GOAL 30
+
+// "A Method for Precision Closed-loop Irrigation" uses a moisture set-point of 31.0
+#define MOISTURE_GOAL 31.0
 
 #define DB_NAME "/root/plants.db"
 #define SQL_STATEMENT_BUFFER_SIZE 1024
-#define SELECT_LAST_PID "SELECT * FROM pid WHERE id=(SELECT MAX(TIME) FROM pid);"
+#define SELECT_LAST_PID "SELECT * FROM pid WHERE TIME=(SELECT MAX(TIME) FROM pid WHERE id = %u);"
 #define INSERT_PID "INSERT INTO pid (id, time, derivativeState, integratorState, pumpDuration) VALUES ( %u, %llu, %f, %f, %d );"
 
 #define CATEGORY_ACTION 'A'
@@ -65,10 +67,10 @@ static int sql_read_pid_callback( void* ret_args, int num_rows, char** rows, cha
      return 0;
 }
 
-static pid_row_t* PID_GetLastPID()
+static pid_row_t* PID_GetLastPID(device_t* device)
 {
   char sql[ SQL_STATEMENT_BUFFER_SIZE ];
-  sprintf( sql, SELECT_LAST_PID );
+  sprintf( sql, SELECT_LAST_PID,  device->id);
   char* err_msg = NULL;
 
   pid_callback_args_t args;
@@ -92,23 +94,23 @@ static pid_row_t* PID_GetLastPID()
 
 void PID_SavePIDdata( device_t* device, float derivativeState, float integratorState, int pumpDuration)
 {
-     long long curr_time = ( long long )time( NULL );
-     uint32_t id = device->id;
-     char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
+  long long curr_time = ( long long )time( NULL );
+  uint32_t id = device->id;
+  char sql_statement[ SQL_STATEMENT_BUFFER_SIZE ];
 
-     printf( INFO "Saving PID data from id: %u, derivativeState: %f, integratorState: %f, pumpDuration: %d\n", id, derivativeState, integratorState, pumpDuration );
-     sprintf( sql_statement, INSERT_PID, id, curr_time, derivativeState, integratorState, pumpDuration );
+  printf( INFO "Saving PID data from id: %u, derivativeState: %f, integratorState: %f, pumpDuration: %d\n", id, derivativeState, integratorState, pumpDuration );
+  sprintf( sql_statement, INSERT_PID, id, curr_time, derivativeState, integratorState, pumpDuration );
 
-    char* err_msg = NULL;
+  char* err_msg = NULL;
 
-    int ret = sqlite3_exec( db, sql_statement, NULL, NULL, &err_msg );
-    if( ret != SQLITE_OK ) {
-          fprintf( stderr, ERROR "Error writing to PID table: %s\n", err_msg );
-          sqlite3_free( err_msg );
-    }
-    else {
-        printf( INFO "Values succesfully stored in db\n" );
-    }
+  int ret = sqlite3_exec( db, sql_statement, NULL, NULL, &err_msg );
+  if( ret != SQLITE_OK ) {
+        fprintf( stderr, ERROR "Error writing to PID table: %s\n", err_msg );
+        sqlite3_free( err_msg );
+  }
+  else {
+      printf( INFO "Values succesfully stored in db\n" );
+  }
 }
 
 void PID_Update(device_t* device)
@@ -122,20 +124,16 @@ void PID_Update(device_t* device)
   float error = MOISTURE_GOAL - lastMoisture->value;
   pTerm = PROPORTIONAL_GAIN * error; // calculate the proportional term
 
-  pid_row_t* lastPID = PID_GetLastPID();
+  pid_row_t* lastPID = PID_GetLastPID(device);
   if (lastPID == NULL) {
     return;
   }
 
-  float integratorState;
-
   // Calculate the integral state with appropriate limiting
-  if (!isnan(lastPID->integratorState)) {
-    integratorState = lastPID->integratorState + error;
-  }
-  else {
+  if (isnan(lastPID->integratorState)) {
     return;
   }
+  float integratorState = lastPID->integratorState + error;
 
   // Limit the integrator state if necessary
   if (integratorState > INTEGRATOR_MAX)
@@ -155,6 +153,7 @@ void PID_Update(device_t* device)
   float derivativeState = lastMoisture->value;
 
   int pumpDuration = round(pTerm + dTerm + iTerm);
+  printf("Last moisture: %d; Error: %f; MOISTURE_GOAL: %f; pTerm: %f; dTerm: %f; iTerm: %f\n", lastMoisture->value, error, MOISTURE_GOAL, pTerm, dTerm, iTerm);
   if (pumpDuration > 0) {
     PID_SavePIDdata(device, derivativeState, integratorState, pumpDuration);
     DeviceManager_ActivatePump(device, pumpDuration);

@@ -16,7 +16,7 @@
 #define DHTTYPE DHT11     // DHT 11
 #define MOISTURE_PIN A0   // select the input pin for the potentiometer
 
-#define A2D_MAX_READING 4095
+#define A2D_MAX_READING 1024
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -34,7 +34,9 @@ int Moisture_getMoisture()
 {
   // Moisture is on a scale of 0 to 100 (with 100 being more moist)
   // A0's input voltage range is from 0 to 1V
-  int moisture = analogRead(MOISTURE_PIN);
+  int moistureValue = analogRead(MOISTURE_PIN);
+  Serial.printf("%d\n", moistureValue);
+  int moisture = ((moistureValue * 100) / A2D_MAX_READING);
 
   // Check if reading from the sensor failed
   if (isnan(moisture)) {
