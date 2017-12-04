@@ -335,6 +335,10 @@ moisture_row_t* DeviceManager_GetMoistureAfterTime( device_t* device, long long 
 
 void DeviceManager_ActivatePump( device_t* device, uint32_t duration )
 {
+    if (duration > 1000) {
+      duration = 1000;
+    }
+
     if (duration > 0) {
       uint32_t id = device->id;
       printf( INFO "Activating %u's pump for %u milliseconds\n", id, duration );
