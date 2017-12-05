@@ -1,7 +1,7 @@
 # Plant Manager (Can't Be Beet)
 Owen Campbell; Dolapo Toki; Samantha Yu
 
-## BeagleBone Source Code
+## BeagleBone
 ### How to Build BeagleBone Source Code
 * Mount `cmpt433/public` folder to BeagleBone over NFS
   * See http://www.cs.sfu.ca/CourseCentral/433/bfraser/other/NFSGuide.pdf for more information
@@ -16,8 +16,9 @@ Owen Campbell; Dolapo Toki; Samantha Yu
 * Run `./createPlantDB` to create the plant database in `$HOME/plants.db$`
 * Run `./plantManager` to start the plant manager application
 
-## ESP8266 Source Code
+## ESP8266
 ### How to Build and Upload ESP8266 Source Code
+* `$ cd esp`
 * Use `PlatformIO` to build and send to the connected ESP8266
 * To view print statements on the ESP8266, open the serial monitor
 
