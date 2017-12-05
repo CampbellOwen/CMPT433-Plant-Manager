@@ -16,6 +16,10 @@ Owen Campbell; Dolapo Toki; Samantha Yu
 * Run `./createPlantDB` to create the plant database in `$HOME/plants.db$`
 * Run `./plantManager` to start the plant manager application
 
+### How to View Database in the BeagleBone
+* `# cd ~`
+* `# sqlite3 plants.db`
+
 ## ESP8266
 ### How to Build and Upload ESP8266 Source Code
 * `$ cd esp`
