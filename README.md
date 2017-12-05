@@ -1,3 +1,26 @@
+# Plant Manager (Can't Be Beet)
+Owen Campbell; Dolapo Toki; Samantha Yu
+
+## BeagleBone Source Code
+### How to Build BeagleBone Source Code
+* Mount `cmpt433/public` folder to BeagleBone over NFS
+  * See http://www.cs.sfu.ca/CourseCentral/433/bfraser/other/NFSGuide.pdf for more information
+  * We'll assume that `cmpt433/public` on host gets mapped to `$(HOME)/cmpt433/public/` on the BeagleBone
+* `$ cd BeagleBone`
+* `$ make`
+  * Creates the executable `plantManager` in `cmpt433/public`
+  * Copies `sql/init.sql` to BeagleBone's `$(HOME)/cmpt433/public/myApps/init.sql`
+  * Copies `scripts/createPlantDB` to BeagleBone's `$(HOME)/createPlantDB` and makes this script executable
+
+### How to Run PlantManager Application on BeagleBone
+* Run `./createPlantDB` to create the plant database in `$HOME/plants.db$`
+* Run `./plantManager` to start the plant manager application
+
+## ESP8266 Source Code
+### How to Build and Upload ESP8266 Source Code
+* Use `PlatformIO` to build and send to the connected ESP8266
+* To view print statements on the ESP8266, open the serial monitor
+
 ## DHT Moisture Sensor
 ### How to Connect Moisture Sensor to BeagleBone
 * SH (sensor's first pin): Humidity/Temperature
