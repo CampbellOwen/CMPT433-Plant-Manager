@@ -20,6 +20,11 @@ Owen Campbell; Dolapo Toki; Samantha Yu
 * `# cd ~`
 * `# sqlite3 plants.db`
 
+### How to Run Web Dashboard
+* Run `$ make website` from the BeagleBone folder
+* Run `$ ./start_flask.sh` on the target to launch the web server
+* Connect to `http://target-ip:5000`
+
 ## ESP8266
 ### How to Build and Upload ESP8266 Source Code
 * `$ cd esp`
