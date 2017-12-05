@@ -31,6 +31,15 @@ Owen Campbell; Dolapo Toki; Samantha Yu
 * Use `PlatformIO` to build and send to the connected ESP8266
 * To view print statements on the ESP8266, open the serial monitor
 
+### How to Connect ESP8266 to Network
+* If the ESP8266 does not have network credentials saved, it will create a `PLANT` WiFi Access Point
+* Connect to this Access Point and enter the SSID and password of the network the BeagleBone is connected to
+* ESP8266 will automatically connect to that network moving forward
+* ESP8266 main.cpp needs to contain the IP Address of the BeagleBone
+
+## Pump
+* MOSFET gate pin should be connected to the D0 pin of the ESP8266
+
 ## DHT Moisture Sensor
 ### How to Connect Moisture Sensor to BeagleBone
 * SH (sensor's first pin): Humidity/Temperature
