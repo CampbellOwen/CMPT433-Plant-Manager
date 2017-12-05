@@ -22,7 +22,7 @@ Owen Campbell; Dolapo Toki; Samantha Yu
 
 ### How to Run Web Dashboard
 * Run `$ make website` from the BeagleBone folder
-* Run `$ ./start_flask.sh` on the target to launch the web server
+* Run `# ./start_flask.sh` on the target to launch the web server
 * Connect to `http://target-ip:5000`
 
 ## ESP8266
