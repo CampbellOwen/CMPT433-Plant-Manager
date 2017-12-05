@@ -21,6 +21,8 @@ Owen Campbell; Dolapo Toki; Samantha Yu
 * `# sqlite3 plants.db`
 
 ### How to Run Web Dashboard
+* Run `$ npm install` in website/plantmanager folder
+* Run `$ pip install -r requirements.txt` in website/backend directory
 * Run `$ make website` from the BeagleBone folder
 * Run `# ./start_flask.sh` on the target to launch the web server
 * Connect to `http://target-ip:5000`
